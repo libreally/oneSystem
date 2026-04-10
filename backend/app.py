@@ -12,8 +12,19 @@ from flask_cors import CORS
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.config.settings import *
-from backend.routes import api_bp, skill_bp, task_bp, config_bp, scheduler_bp, file_retrieval_bp, user_profile_bp
+from backend.routes import (
+    api_bp, 
+    skill_bp, 
+    task_bp, 
+    config_bp, 
+    scheduler_bp, 
+    file_retrieval_bp, 
+    user_profile_bp,
+    integration_bp
+)
 from backend.services.scheduler_service import init_scheduler_service
+from backend.services.integration_service import init_integration_service
+from backend.services.llm_service import init_llm_service
 from backend.models import init_db
 
 
@@ -44,9 +55,20 @@ def create_app():
     app.register_blueprint(scheduler_bp)
     app.register_blueprint(file_retrieval_bp)
     app.register_blueprint(user_profile_bp)
+    app.register_blueprint(integration_bp)
     
     # 初始化定时调度服务
     init_scheduler_service()
+    
+    # 初始化系统集成服务
+    init_integration_service()
+    
+    # 初始化 LLM 服务
+    init_llm_service(
+        api_key=LLM_API_KEY,
+        api_base=LLM_API_BASE,
+        model=LLM_MODEL
+    )
     
     # 配置日志
     logging.basicConfig(
@@ -78,5 +100,8 @@ if __name__ == '__main__':
     print(f"  文件检索：已启用")
     print(f"  用户画像：已启用")
     print(f"  数据库：SQLite (持久化)")
+    print(f"  LLM 服务：{'已启用' if LLM_API_KEY else '未启用 (需配置 API Key)'}")
+    print(f"  系统集成：已启用 (OA/ERP/CRM)")
+    print(f"  动态技能：已启用")
     print("=" * 50)
     app.run(host=HOST, port=PORT, debug=DEBUG)
