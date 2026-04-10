@@ -1,0 +1,10 @@
+==================================================
+  智能办公平台 - 一系统
+==================================================
+  服务地址：http://0.0.0.0:5000
+  API 文档：http://0.0.0.0:5000/api/health
+==================================================
+ * Serving Flask app 'app'
+ * Debug mode: on
+Address already in use
+Port 5000 is in use by another program. Either identify and stop that program, or start the server with a different port.

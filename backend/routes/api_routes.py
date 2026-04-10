@@ -3,8 +3,13 @@
 """
 from flask import Blueprint, jsonify, request
 from datetime import datetime
+from backend.services.skill_engine import skill_engine
+from backend.services.ai_service import init_ai_service
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
+
+# 初始化 AI 服务
+init_ai_service(skill_engine)
 
 
 @api_bp.route('/health', methods=['GET'])
@@ -20,8 +25,11 @@ def health_check():
 @api_bp.route('/chat', methods=['POST'])
 def chat():
     """AI 聊天接口"""
+    from backend.services.ai_service import ai_assistant_service
+    
     data = request.get_json()
     message = data.get('message', '')
+    user_id = data.get('user_id')
     
     if not message:
         return jsonify({
@@ -29,20 +37,10 @@ def chat():
             'message': '消息内容不能为空'
         }), 400
     
-    # TODO: 调用 AI 服务处理消息
-    response = {
-        'success': True,
-        'data': {
-            'reply': f'收到您的消息：{message}',
-            'suggestions': [
-                '帮我生成周报',
-                '检查敏感词',
-                '合并 Excel 表格'
-            ]
-        }
-    }
+    # 使用 AI 服务处理消息
+    result = ai_assistant_service.process_message(message, user_id)
     
-    return jsonify(response)
+    return jsonify(result)
 
 
 @api_bp.route('/tasks/summary', methods=['GET'])
