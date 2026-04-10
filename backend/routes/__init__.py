@@ -7,5 +7,6 @@ from .task_routes import task_bp
 from .config_routes import config_bp
 from .scheduler_routes import scheduler_bp
 from .file_retrieval_routes import file_retrieval_bp
+from .user_profile_routes import user_profile_bp
 
-__all__ = ['api_bp', 'skill_bp', 'task_bp', 'config_bp', 'scheduler_bp', 'file_retrieval_bp']
+__all__ = ['api_bp', 'skill_bp', 'task_bp', 'config_bp', 'scheduler_bp', 'file_retrieval_bp', 'user_profile_bp']
