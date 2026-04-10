@@ -1,37 +1,56 @@
 ```
-# Dependencies
-node_modules/
-
-# Build outputs
-dist/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
 build/
-*.js
-*.css
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Logs and temp files
-*.log
-*.tmp
-
-# Environment variables
+# Environment
 .env
 .env.local
-*.env.*
+.env.*
+.venv/
+venv/
+ENV/
 
-# Editors
+# IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# Python cache (if any Python files exist in frontend)
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+# Logs
+*.log
 
-# Coverage reports
-coverage/
-htmlcov/
+# Coverage
 .coverage
+htmlcov/
+.coverage.*
+.cache
 
-# Local configuration
-.vsliveshare/
+# Pytest
+.pytest_cache/
+
+# Mypy
+.mypy_cache/
+
+# Build
+build/
+dist/
 ```
