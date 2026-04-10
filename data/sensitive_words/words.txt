@@ -1,0 +1,9 @@
+# 敏感词库示例文件
+# 格式：级别，敏感词
+# 级别：high(高), medium(中), low(低)
+
+high，敏感词 1
+high，敏感词 2
+medium，注意词 1
+medium，注意词 2
+low，提示词 1
