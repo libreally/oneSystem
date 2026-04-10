@@ -1,0 +1,64 @@
+{
+  "template_id": "default_notice",
+  "name": "标准通知模板",
+  "type": "通知",
+  "description": "适用于一般性通知公文",
+  "structure": {
+    "title": {
+      "format": "关于{topic}的通知",
+      "style": {
+        "font_size": 16,
+        "bold": true,
+        "align": "center"
+      }
+    },
+    "header": {
+      "content": "各部门、各单位：",
+      "style": {
+        "font_size": 12,
+        "align": "left"
+      }
+    },
+    "body": {
+      "placeholder": "{content}",
+      "style": {
+        "font_size": 12,
+        "line_spacing": 1.5,
+        "first_line_indent": 2
+      }
+    },
+    "footer": {
+      "content": "\n\n{organization}\n{date}",
+      "style": {
+        "font_size": 12,
+        "align": "right"
+      }
+    }
+  },
+  "variables": [
+    {
+      "name": "topic",
+      "description": "通知主题",
+      "required": true
+    },
+    {
+      "name": "content",
+      "description": "通知正文内容",
+      "required": true
+    },
+    {
+      "name": "organization",
+      "description": "发文单位",
+      "required": true,
+      "default": "办公室"
+    },
+    {
+      "name": "date",
+      "description": "发文日期",
+      "required": true,
+      "default": "auto"
+    }
+  ],
+  "created_at": "2024-01-01",
+  "version": "1.0"
+}

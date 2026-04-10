@@ -1,0 +1,115 @@
+{
+  "template_id": "default_report",
+  "name": "标准报告模板",
+  "type": "报告",
+  "description": "适用于工作报告、总结报告等",
+  "structure": {
+    "title": {
+      "format": "{topic}报告",
+      "style": {
+        "font_size": 16,
+        "bold": true,
+        "align": "center"
+      }
+    },
+    "header": {
+      "content": "{leader}：",
+      "style": {
+        "font_size": 12,
+        "align": "left"
+      }
+    },
+    "sections": [
+      {
+        "title": "一、工作概况",
+        "placeholder": "{section1}",
+        "style": {
+          "heading_font_size": 14,
+          "heading_bold": true,
+          "content_font_size": 12
+        }
+      },
+      {
+        "title": "二、主要成效",
+        "placeholder": "{section2}",
+        "style": {
+          "heading_font_size": 14,
+          "heading_bold": true,
+          "content_font_size": 12
+        }
+      },
+      {
+        "title": "三、存在问题",
+        "placeholder": "{section3}",
+        "style": {
+          "heading_font_size": 14,
+          "heading_bold": true,
+          "content_font_size": 12
+        }
+      },
+      {
+        "title": "四、下一步计划",
+        "placeholder": "{section4}",
+        "style": {
+          "heading_font_size": 14,
+          "heading_bold": true,
+          "content_font_size": 12
+        }
+      }
+    ],
+    "footer": {
+      "content": "\n\n{reporter}\n{date}",
+      "style": {
+        "font_size": 12,
+        "align": "right"
+      }
+    }
+  },
+  "variables": [
+    {
+      "name": "topic",
+      "description": "报告主题",
+      "required": true
+    },
+    {
+      "name": "leader",
+      "description": "汇报对象",
+      "required": true,
+      "default": "领导"
+    },
+    {
+      "name": "section1",
+      "description": "工作概况内容",
+      "required": false
+    },
+    {
+      "name": "section2",
+      "description": "主要成效内容",
+      "required": false
+    },
+    {
+      "name": "section3",
+      "description": "存在问题内容",
+      "required": false
+    },
+    {
+      "name": "section4",
+      "description": "下一步计划内容",
+      "required": false
+    },
+    {
+      "name": "reporter",
+      "description": "报告人",
+      "required": true,
+      "default": "XXX 部门"
+    },
+    {
+      "name": "date",
+      "description": "报告日期",
+      "required": true,
+      "default": "auto"
+    }
+  ],
+  "created_at": "2024-01-01",
+  "version": "1.0"
+}

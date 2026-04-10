@@ -12,7 +12,8 @@ from flask_cors import CORS
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.config.settings import *
-from backend.routes import api_bp, skill_bp, task_bp, config_bp
+from backend.routes import api_bp, skill_bp, task_bp, config_bp, scheduler_bp, file_retrieval_bp
+from backend.services.scheduler_service import init_scheduler_service
 
 
 def create_app():
@@ -33,6 +34,11 @@ def create_app():
     app.register_blueprint(skill_bp)
     app.register_blueprint(task_bp)
     app.register_blueprint(config_bp)
+    app.register_blueprint(scheduler_bp)
+    app.register_blueprint(file_retrieval_bp)
+    
+    # 初始化定时调度服务
+    init_scheduler_service()
     
     # 配置日志
     logging.basicConfig(
@@ -60,5 +66,7 @@ if __name__ == '__main__':
     print("=" * 50)
     print(f"  服务地址：http://{HOST}:{PORT}")
     print(f"  API 文档：http://{HOST}:{PORT}/api/health")
+    print(f"  定时调度：已启动")
+    print(f"  文件检索：已启用")
     print("=" * 50)
     app.run(host=HOST, port=PORT, debug=DEBUG)
