@@ -26,6 +26,14 @@ for dir_path in [DATA_DIR, TEMPLATES_DIR, SENSITIVE_WORDS_DIR, TASKS_DIR, SKILLS
 
 # 数据库配置（使用SQLite）
 DATABASE_URI = os.environ.get('DATABASE_URI', f'sqlite:///{os.path.join(DATA_DIR, "yixitong.db")}')
+SQLALCHEMY_TRACK_MODIFICATIONS = False
+SQLALCHEMY_ECHO = DEBUG
+
+# LLM 配置
+LLM_API_KEY = os.environ.get('LLM_API_KEY', '')
+LLM_API_BASE = os.environ.get('LLM_API_BASE', 'https://api.openai.com/v1')
+LLM_MODEL = os.environ.get('LLM_MODEL', 'gpt-3.5-turbo')
+LLM_ENABLED = bool(LLM_API_KEY)
 
 # 定时任务配置
 SCHEDULER_API_ENABLED = True

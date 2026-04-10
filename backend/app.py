@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from backend.config.settings import *
 from backend.routes import api_bp, skill_bp, task_bp, config_bp, scheduler_bp, file_retrieval_bp, user_profile_bp
 from backend.services.scheduler_service import init_scheduler_service
+from backend.models import init_db
 
 
 def create_app():
@@ -25,9 +26,15 @@ def create_app():
     # 基础配置
     app.config['SECRET_KEY'] = SECRET_KEY
     app.config['DEBUG'] = DEBUG
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URI
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = SQLALCHEMY_TRACK_MODIFICATIONS
+    app.config['SQLALCHEMY_ECHO'] = SQLALCHEMY_ECHO
     
     # 启用 CORS
     CORS(app)
+    
+    # 初始化数据库
+    init_db(app)
     
     # 注册蓝图
     app.register_blueprint(api_bp)
@@ -70,5 +77,6 @@ if __name__ == '__main__':
     print(f"  定时调度：已启动")
     print(f"  文件检索：已启用")
     print(f"  用户画像：已启用")
+    print(f"  数据库：SQLite (持久化)")
     print("=" * 50)
     app.run(host=HOST, port=PORT, debug=DEBUG)
