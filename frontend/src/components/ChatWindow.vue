@@ -1,12 +1,11 @@
 <template>
-  <div class="ai-chat-window" :class="{ 'contact-panel-active': chatStore.isContactPanelOpen }">
+  <div class="ai-chat-window">
     <div class="ai-chat-header">
       <div style="display: flex; align-items: center; gap: 10px;">
-        <button @click="toggleContactList" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer;">☰</button>
-        <span style="font-size: 24px;" id="chatAvatar">{{ currentContact?.avatar || '🤖' }}</span>
+        <span style="font-size: 24px;">🤖</span>
         <div>
-          <div style="font-weight: 600;" id="chatTitle">{{ currentContact?.name || 'AI 自动化助手' }}</div>
-          <div style="font-size: 12px; opacity: 0.9;" id="chatStatus">{{ getStatusText }}</div>
+          <div style="font-weight: 600;">AI 助手</div>
+          <div style="font-size: 12px; opacity: 0.9;">在线 | 随时为您服务</div>
         </div>
       </div>
       <div style="display: flex; gap: 10px;">
@@ -15,42 +14,20 @@
       </div>
     </div>
     
-    <!-- 联系人列表面板 -->
-    <div class="contact-panel" :class="{ active: chatStore.isContactPanelOpen }">
-      <div class="contact-panel-header">
-        <div style="font-weight: 600; padding: 15px;">联系人</div>
-      </div>
-      <div class="contact-list">
-        <div 
-          v-for="contact in chatStore.contacts" 
-          :key="contact.id"
-          class="contact-item" 
-          @click="switchChat(contact.id)"
-        >
-          <div class="contact-avatar">{{ contact.avatar }}</div>
-          <div class="contact-info">
-            <div class="contact-name">{{ contact.name }}</div>
-            <div class="contact-status" :class="contact.status">{{ getStatusLabel(contact.status) }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
     <div class="ai-chat-body" ref="chatBodyRef">
       <div 
         v-for="message in chatStore.messages" 
         :key="message.id"
         class="message" 
-        :class="message.type"
+        :class="message.role === 'user' ? 'user' : 'ai'"
       >
-        <div class="message-avatar" :class="message.type === 'user' ? 'user-avatar-chat' : 'ai-avatar'">
-          {{ message.type === 'user' ? '张' : (currentContact?.avatar || '🤖') }}
+        <div class="message-avatar" :class="message.role === 'user' ? 'user-avatar-chat' : 'ai-avatar'">
+          {{ message.role === 'user' ? '张' : '🤖' }}
         </div>
         <div class="message-wrapper">
-          <div class="message-content" v-html="message.content"></div>
+          <div class="message-content">{{ message.content }}</div>
           <div class="message-footer">
-            <span class="message-time">{{ message.timestamp }}</span>
-            <span v-if="message.status" class="message-status" :class="message.status">{{ getStatusMessage(message.status) }}</span>
+            <span class="message-time">{{ formatTime(message.timestamp) }}</span>
           </div>
         </div>
       </div>
@@ -69,7 +46,7 @@
     <div class="ai-chat-input">
       <input 
         type="text" 
-        placeholder="输入您的需求..." 
+        placeholder="输入您的需求，例如：帮我生成周报、检查敏感词..." 
         v-model="inputMessage"
         @keypress="handleKeypress"
       >
@@ -79,46 +56,22 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, nextTick, watch } from 'vue'
 import { useChatStore } from '../stores/chat'
+import { formatDate } from '@/utils/helpers'
 
 const chatStore = useChatStore()
 const inputMessage = ref('')
 const chatBodyRef = ref(null)
 
-const currentContact = computed(() => chatStore.currentContact)
-const getStatusText = computed(() => {
-  if (chatStore.currentChat === 'ai') {
-    return '在线 | 随时为您服务'
-  }
-  const contact = currentContact.value
-  if (contact?.status === 'online') return '在线 | 正在聊天'
-  if (contact?.status === 'busy') return '忙碌 | 稍后回复'
-  return '离线'
-})
-
-const getStatusLabel = (status) => {
-  const labels = { online: '在线', offline: '离线', busy: '忙碌' }
-  return labels[status] || status
-}
-
-const getStatusMessage = (status) => {
-  const messages = { sending: '发送中...', delivered: '已送达', read: '已读' }
-  return messages[status] || ''
-}
-
-const toggleContactList = () => {
-  chatStore.toggleContactPanel()
-}
-
-const switchChat = (contactId) => {
-  chatStore.switchChat(contactId)
-}
-
-const sendMessage = () => {
+const sendMessage = async () => {
   if (!inputMessage.value.trim()) return
-  chatStore.sendMessage(inputMessage.value)
-  inputMessage.value = ''
+  try {
+    await chatStore.sendMessage(inputMessage.value)
+    inputMessage.value = ''
+  } catch (error) {
+    console.error('Send message failed:', error)
+  }
 }
 
 const handleKeypress = (event) => {
@@ -127,13 +80,23 @@ const handleKeypress = (event) => {
   }
 }
 
-const closeChat = () => {
-  chatStore.isChatWindowOpen = false
+const formatTime = (timestamp) => {
+  if (!timestamp) return ''
+  return formatDate(timestamp, 'HH:mm')
 }
 
-const clearHistory = () => {
-  if (confirm('确定要清空聊天历史吗？')) {
-    chatStore.clearMessageHistory()
+const closeChat = () => {
+  const fab = document.querySelector('.ai-fab')
+  if (fab) fab.style.display = 'flex'
+}
+
+const clearHistory = async () => {
+  if (confirm('确定要清空当前会话历史吗？')) {
+    try {
+      await chatStore.clearContext()
+    } catch (error) {
+      console.error('Clear history failed:', error)
+    }
   }
 }
 

@@ -69,25 +69,42 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useChatStore } from '../stores/chat'
-import ChatWindow from '../components/ChatWindow.vue'
+import { ref, onMounted } from 'vue'
+import { useChatStore } from './stores/chat'
+import ChatWindow from './components/ChatWindow.vue'
 
 const chatStore = useChatStore()
 const searchText = ref('')
 
+onMounted(async () => {
+  try {
+    await chatStore.fetchSessions()
+  } catch (error) {
+    console.error('Failed to fetch sessions:', error)
+  }
+})
+
 const toggleChatWindow = () => {
-  chatStore.toggleChatWindow()
+  const fab = document.querySelector('.ai-fab')
+  if (fab) {
+    fab.style.display = fab.style.display === 'none' ? 'flex' : 'none'
+  }
 }
 
-const handleSearchKeypress = (event) => {
+const handleSearchKeypress = async (event) => {
   if (event.key === 'Enter' && searchText.value.trim()) {
     const command = searchText.value.trim()
-    chatStore.toggleChatWindow()
-    setTimeout(() => {
-      chatStore.sendMessage(command)
-    }, 300)
     searchText.value = ''
+    
+    // Show chat window
+    const fab = document.querySelector('.ai-fab')
+    if (fab) fab.style.display = 'none'
+    
+    try {
+      await chatStore.sendMessage(command)
+    } catch (error) {
+      console.error('Send message failed:', error)
+    }
   }
 }
 </script>
