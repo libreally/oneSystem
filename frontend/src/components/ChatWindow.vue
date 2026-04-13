@@ -111,7 +111,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch, computed } from 'vue'
+import { ref, nextTick, watch, computed, onMounted } from 'vue'
 import { useChatStore } from '../stores/chat'
 import { formatDate } from '@/utils/helpers'
 
@@ -120,6 +120,25 @@ const inputMessage = ref('')
 const chatBodyRef = ref(null)
 const isContactPanelOpen = ref(false)
 const currentChat = ref('ai')
+
+// 初始化组件
+onMounted(async () => {
+  try {
+    // 加载会话列表
+    await chatStore.fetchSessions()
+    
+    // 如果没有会话，创建一个新会话
+    if (chatStore.sessions.length === 0) {
+      await chatStore.createSession('AI自动化助手')
+    } else if (!chatStore.currentSessionId) {
+      // 如果有会话但没有当前会话，设置第一个会话为当前会话
+      chatStore.currentSessionId = chatStore.sessions[0].id
+      await chatStore.loadMessages(chatStore.currentSessionId)
+    }
+  } catch (error) {
+    console.error('初始化聊天窗口失败:', error)
+  }
+})
 
 const currentChatAvatar = computed(() => {
   return currentChat.value === 'ai' ? '🤖' : currentChat.value.charAt(0)
@@ -157,29 +176,48 @@ const toggleContactPanel = () => {
   isContactPanelOpen.value = !isContactPanelOpen.value
 }
 
-const switchToChat = (name) => {
-  currentChat.value = name
-  isContactPanelOpen.value = false
-  // 这里可以添加加载对应聊天历史的逻辑
-  chatStore.clearMessages()
-  
-  // 添加欢迎消息
-  if (currentChat.value === 'ai') {
-    chatStore.messages.push({
-      id: Date.now(),
-      role: 'assistant',
-      content: '您好！我是AI自动化助手，可以帮您：\n• 处理公文和文档\n• 生成报表和总结\n• 管理任务和督办\n• 数据统计和分析\n\n请直接告诉我您的需求，例如：\n"帮我生成周报"\n"检查这个文件的敏感词"\n"合并这两个Excel表格"',
-      timestamp: new Date().toISOString()
-    })
-  } else {
-    chatStore.messages.push({
-      id: Date.now(),
-      role: 'assistant',
-      content: `您好！我是${currentChat.value}，有什么可以帮您的吗？`,
-      timestamp: new Date().toISOString()
-    })
+const switchToChat = async (name) => {
+    currentChat.value = name
+    isContactPanelOpen.value = false
+    
+    try {
+      // 加载会话列表
+      await chatStore.fetchSessions()
+      
+      // 查找或创建对应用户的会话
+      let targetSession = chatStore.sessions.find(session => session.title === name)
+      
+      if (!targetSession) {
+        // 如果没有会话，创建一个新会话
+        targetSession = await chatStore.createSession(name)
+      } else {
+        // 如果有会话，加载对应的消息
+        await chatStore.loadMessages(targetSession.id)
+        console.log('加载历史消息:', chatStore.messages)
+      }
+      // 确保当前会话ID被更新
+      chatStore.currentSessionId = targetSession.id
+    } catch (error) {
+      console.error('加载聊天历史失败:', error)
+      // 如果加载失败，添加欢迎消息
+      chatStore.clearMessages()
+      if (currentChat.value === 'ai') {
+        chatStore.messages.push({
+          id: Date.now(),
+          role: 'assistant',
+          content: '您好！我是AI自动化助手，可以帮您：\n• 处理公文和文档\n• 生成报表和总结\n• 管理任务和督办\n• 数据统计和分析\n\n请直接告诉我您的需求，例如：\n"帮我生成周报"\n"检查这个文件的敏感词"\n"合并这两个Excel表格"',
+          timestamp: new Date().toISOString()
+        })
+      } else {
+        chatStore.messages.push({
+          id: Date.now(),
+          role: 'assistant',
+          content: `您好！我是${currentChat.value}，有什么可以帮您的吗？`,
+          timestamp: new Date().toISOString()
+        })
+      }
+    }
   }
-}
 
 const formatTime = (timestamp) => {
   if (!timestamp) return ''

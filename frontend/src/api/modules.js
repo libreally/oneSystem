@@ -7,8 +7,8 @@ export const chatApi = {
   },
 
   // Get chat history
-  getHistory(sessionId, limit = 20) {
-    return apiClient.get(`/chat/history/${sessionId}`, { params: { limit } });
+  getHistory(sessionId, limit = 20, userId = 'default_user') {
+    return apiClient.get(`/chat/history/${sessionId}`, { params: { limit, user_id: userId } });
   },
 
   // Get all sessions

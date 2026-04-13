@@ -72,13 +72,13 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  async function loadMessages(sessionId) {
+  async function loadMessages(sessionId, userId = 'default_user') {
     isLoading.value = true;
     error.value = null;
 
     try {
       currentSessionId.value = sessionId;
-      const response = await chatApi.getHistory(sessionId);
+      const response = await chatApi.getHistory(sessionId, 20, userId);
       messages.value = response.messages || [];
       return messages.value;
     } catch (err) {
@@ -108,6 +108,13 @@ export const useChatStore = defineStore('chat', () => {
 
     try {
       console.log('Sending message:', content);
+      
+      // 如果没有会话ID，创建一个新会话
+      if (!currentSessionId.value) {
+        const newSession = await createSession('新对话');
+        currentSessionId.value = newSession.id;
+      }
+      
       const data = await chatApi.sendMessage(content, 'default_user', currentSessionId.value);
       console.log('Received response:', data);
       

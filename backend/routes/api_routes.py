@@ -23,11 +23,21 @@ def health_check():
 @api_bp.route('/chat', methods=['POST'])
 def chat():
     """AI 聊天接口"""
+    from flask import request, jsonify
+    import logging
     from backend.services.ai_service import ai_assistant_service
+    from backend.models.db_models import ChatSession
+    from backend.models import get_db
+    from datetime import datetime
+    
+    logger = logging.getLogger(__name__)
     
     data = request.get_json()
     message = data.get('message', '')
     user_id = data.get('user_id', 'default_user')
+    session_id = data.get('session_id')
+    
+    logger.info(f"收到聊天请求：message={message}, user_id={user_id}, session_id={session_id}")
     
     if not message:
         return jsonify({
@@ -35,17 +45,121 @@ def chat():
             'message': '消息内容不能为空'
         }), 400
     
-    # 使用 AI 服务处理消息
-    result = ai_assistant_service.process_message(message, user_id)
+    # 处理字符串类型的user_id，默认为1（admin用户）
+    if isinstance(user_id, str) and user_id != 'default_user':
+        # 尝试查找用户
+        from backend.models.db_models import User
+        user = User.query.filter_by(username=user_id).first()
+        if user:
+            user_id = user.id
+        else:
+            user_id = 1
+    elif user_id == 'default_user':
+        user_id = 1
     
-    # 记录用户使用行为
-    if result.get('success') and result.get('skill_id'):
-        user_profile_service.record_usage(
+    # 保存消息到会话（先保存用户消息，确保消息不丢失）
+    db = get_db()
+    ai_response = '抱歉，处理您的请求时遇到错误。'
+    
+    try:
+        # 使用 AI 服务处理消息
+        result = ai_assistant_service.process_message(message, user_id)
+        ai_response = result.get('message', result.get('response', ai_response))
+        
+        # 记录用户使用行为
+        if result.get('success') and result.get('skill_id'):
+            from backend.services.user_profile_service import user_profile_service
+            user_profile_service.record_usage(
+                user_id=user_id,
+                skill_id=result['skill_id'],
+                action='chat_execution',
+                details={'message': message, 'intent': result.get('intent')}
+            )
+    except Exception as e:
+        logger.error(f"处理消息失败：{str(e)}")
+        # 即使AI服务失败，也要返回一个默认响应
+        result = {
+            'success': False,
+            'message': ai_response,
+            'need_more_info': False
+        }
+    
+    # 保存消息到会话
+    logger.info(f"准备保存消息到会话：session_id={session_id}, user_id={user_id}")
+    if session_id:
+        # 先查询所有会话，看看会话13是否存在
+        all_sessions = db.query(ChatSession).all()
+        logger.info(f"所有会话：{[s.id for s in all_sessions]}")
+        
+        # 查询会话13
+        session = db.query(ChatSession).filter_by(id=session_id).first()
+        logger.info(f"查询会话13结果：session={session}")
+        if session:
+            logger.info(f"会话13的user_id：{session.user_id}")
+            # 创建新的消息列表，包含原有消息和新消息
+            new_messages = session.messages.copy()
+            
+            # 添加用户消息
+            user_message = {
+                'role': 'user',
+                'content': message,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            new_messages.append(user_message)
+            # 添加AI回复
+            assistant_message = {
+                'role': 'assistant',
+                'content': ai_response,
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            new_messages.append(assistant_message)
+            logger.info(f"添加消息到会话：user_message={user_message}, assistant_message={assistant_message}")
+            logger.info(f"添加消息后，会话13的消息数量：{len(new_messages)}")
+            
+            # 显式地重新赋值messages字段
+            session.messages = new_messages
+            
+            try:
+                db.commit()
+                logger.info("消息保存成功")
+                # 重新查询会话，确认消息是否被保存
+                updated_session = db.query(ChatSession).filter_by(id=session_id).first()
+                logger.info(f"更新后会话13的消息数量：{len(updated_session.messages)}")
+            except Exception as e:
+                logger.error(f"消息保存失败：{str(e)}")
+                db.rollback()
+    else:
+        # 如果没有会话ID，创建一个新会话
+        new_session = ChatSession(
             user_id=user_id,
-            skill_id=result['skill_id'],
-            action='chat_execution',
-            details={'message': message, 'intent': result.get('intent')}
+            title='新对话',
+            messages=[
+                {
+                    'role': 'user',
+                    'content': message,
+                    'timestamp': datetime.utcnow().isoformat()
+                },
+                {
+                    'role': 'assistant',
+                    'content': ai_response,
+                    'timestamp': datetime.utcnow().isoformat()
+                }
+            ],
+            context={}
         )
+        db.add(new_session)
+        try:
+            db.commit()
+            db.refresh(new_session)
+            session_id = new_session.id
+            logger.info(f"创建新会话成功：session_id={session_id}")
+        except Exception as e:
+            logger.error(f"创建新会话失败：{str(e)}")
+            db.rollback()
+    
+    # 返回会话ID
+    result['session_id'] = session_id
+    logger.info(f"返回聊天结果：session_id={session_id}, result={result}")
     
     return jsonify(result)
 
@@ -141,6 +255,18 @@ def get_chat_sessions():
     from backend.models import get_db
     
     user_id = request.args.get('user_id', 'default_user')
+    # 处理字符串类型的user_id，默认为1（admin用户）
+    if isinstance(user_id, str) and user_id != 'default_user':
+        # 尝试查找用户
+        from backend.models.db_models import User
+        user = User.query.filter_by(username=user_id).first()
+        if user:
+            user_id = user.id
+        else:
+            user_id = 1
+    elif user_id == 'default_user':
+        user_id = 1
+    
     db = get_db()
     
     # 获取用户的所有会话
@@ -172,6 +298,18 @@ def create_chat_session():
     data = request.get_json()
     user_id = data.get('user_id', 'default_user')
     title = data.get('title', '新对话')
+    
+    # 处理字符串类型的user_id，默认为1（admin用户）
+    if isinstance(user_id, str) and user_id != 'default_user':
+        # 尝试查找用户
+        from backend.models.db_models import User
+        user = User.query.filter_by(username=user_id).first()
+        if user:
+            user_id = user.id
+        else:
+            user_id = 1
+    elif user_id == 'default_user':
+        user_id = 1
     
     db = get_db()
     
@@ -206,6 +344,18 @@ def get_chat_history(session_id):
     from backend.models import get_db
     
     user_id = request.args.get('user_id', 'default_user')
+    # 处理字符串类型的user_id，默认为1（admin用户）
+    if isinstance(user_id, str) and user_id != 'default_user':
+        # 尝试查找用户
+        from backend.models.db_models import User
+        user = User.query.filter_by(username=user_id).first()
+        if user:
+            user_id = user.id
+        else:
+            user_id = 1
+    elif user_id == 'default_user':
+        user_id = 1
+    
     db = get_db()
     
     # 获取会话
@@ -234,6 +384,18 @@ def delete_chat_session(session_id):
     from backend.models import get_db
     
     user_id = request.args.get('user_id', 'default_user')
+    # 处理字符串类型的user_id，默认为1（admin用户）
+    if isinstance(user_id, str) and user_id != 'default_user':
+        # 尝试查找用户
+        from backend.models.db_models import User
+        user = User.query.filter_by(username=user_id).first()
+        if user:
+            user_id = user.id
+        else:
+            user_id = 1
+    elif user_id == 'default_user':
+        user_id = 1
+    
     db = get_db()
     
     # 获取会话
@@ -262,6 +424,18 @@ def clear_chat_session(session_id):
     from backend.models import get_db
     
     user_id = request.args.get('user_id', 'default_user')
+    # 处理字符串类型的user_id，默认为1（admin用户）
+    if isinstance(user_id, str) and user_id != 'default_user':
+        # 尝试查找用户
+        from backend.models.db_models import User
+        user = User.query.filter_by(username=user_id).first()
+        if user:
+            user_id = user.id
+        else:
+            user_id = 1
+    elif user_id == 'default_user':
+        user_id = 1
+    
     db = get_db()
     
     # 获取会话

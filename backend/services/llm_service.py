@@ -331,9 +331,13 @@ class {skill_name.title().replace('_', '')}(BaseSkill):
             }
         
         try:
+            # 设置默认超时时间为30秒
+            timeout = kwargs.pop('timeout', 30)
+            
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
+                timeout=timeout,
                 **kwargs
             )
             
