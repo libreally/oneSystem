@@ -2,8 +2,8 @@ import apiClient from './index';
 
 export const chatApi = {
   // Send message and get response
-  sendMessage(message, userId = 'default_user') {
-    return apiClient.post('/chat', { message, user_id: userId });
+  sendMessage(message, userId = 'default_user', sessionId = null) {
+    return apiClient.post('/chat', { message, user_id: userId, session_id: sessionId });
   },
 
   // Get chat history
@@ -12,23 +12,23 @@ export const chatApi = {
   },
 
   // Get all sessions
-  getSessions() {
-    return apiClient.get('/chat/sessions');
+  getSessions(userId = 'default_user') {
+    return apiClient.get('/chat/sessions', { params: { user_id: userId } });
   },
 
   // Create new session
-  createSession(title = 'New Chat') {
-    return apiClient.post('/chat/sessions', { title });
+  createSession(title = 'New Chat', userId = 'default_user') {
+    return apiClient.post('/chat/sessions', { title, user_id: userId });
   },
 
   // Delete session
-  deleteSession(sessionId) {
-    return apiClient.delete(`/chat/sessions/${sessionId}`);
+  deleteSession(sessionId, userId = 'default_user') {
+    return apiClient.delete(`/chat/sessions/${sessionId}`, { params: { user_id: userId } });
   },
 
   // Clear context
-  clearContext(sessionId) {
-    return apiClient.post(`/chat/sessions/${sessionId}/clear`);
+  clearContext(sessionId, userId = 'default_user') {
+    return apiClient.post(`/chat/sessions/${sessionId}/clear`, { user_id: userId });
   }
 };
 

@@ -3,16 +3,16 @@
     "user_id": "admin",
     "username": "admin",
     "role": "admin",
-    "created_at": "2026-04-13T17:24:23.843415",
-    "updated_at": "2026-04-13T17:24:23.843417",
+    "created_at": "2026-04-13T18:51:22.922806",
+    "updated_at": "2026-04-13T18:51:22.922809",
     "last_login": null
   },
   {
     "user_id": "test",
     "username": "test",
     "role": "user",
-    "created_at": "2026-04-13T17:24:23.843421",
-    "updated_at": "2026-04-13T17:24:23.843422",
+    "created_at": "2026-04-13T18:51:22.922813",
+    "updated_at": "2026-04-13T18:51:22.922814",
     "last_login": null
   }
 ]

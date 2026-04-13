@@ -132,3 +132,154 @@ def get_recommendations():
         'success': True,
         'data': recommendations
     })
+
+
+@api_bp.route('/chat/sessions', methods=['GET'])
+def get_chat_sessions():
+    """获取聊天会话列表"""
+    from backend.models.db_models import ChatSession
+    from backend.models import get_db
+    
+    user_id = request.args.get('user_id', 'default_user')
+    db = get_db()
+    
+    # 获取用户的所有会话
+    sessions = db.query(ChatSession).filter_by(user_id=user_id).order_by(ChatSession.updated_at.desc()).all()
+    
+    # 转换为字典列表
+    session_list = []
+    for session in sessions:
+        session_list.append({
+            'id': session.id,
+            'title': session.title,
+            'created_at': session.created_at.isoformat() if session.created_at else None,
+            'updated_at': session.updated_at.isoformat() if session.updated_at else None,
+            'message_count': len(session.messages) if session.messages else 0
+        })
+    
+    return jsonify({
+        'success': True,
+        'sessions': session_list
+    })
+
+
+@api_bp.route('/chat/sessions', methods=['POST'])
+def create_chat_session():
+    """创建新的聊天会话"""
+    from backend.models.db_models import ChatSession
+    from backend.models import get_db
+    
+    data = request.get_json()
+    user_id = data.get('user_id', 'default_user')
+    title = data.get('title', '新对话')
+    
+    db = get_db()
+    
+    # 创建新会话
+    new_session = ChatSession(
+        user_id=user_id,
+        title=title,
+        messages=[],
+        context={}
+    )
+    
+    db.add(new_session)
+    db.commit()
+    db.refresh(new_session)
+    
+    return jsonify({
+        'success': True,
+        'session': {
+            'id': new_session.id,
+            'title': new_session.title,
+            'created_at': new_session.created_at.isoformat() if new_session.created_at else None,
+            'updated_at': new_session.updated_at.isoformat() if new_session.updated_at else None,
+            'messages': new_session.messages
+        }
+    })
+
+
+@api_bp.route('/chat/history/<int:session_id>', methods=['GET'])
+def get_chat_history(session_id):
+    """获取聊天会话历史"""
+    from backend.models.db_models import ChatSession
+    from backend.models import get_db
+    
+    user_id = request.args.get('user_id', 'default_user')
+    db = get_db()
+    
+    # 获取会话
+    session = db.query(ChatSession).filter_by(id=session_id, user_id=user_id).first()
+    
+    if not session:
+        return jsonify({
+            'success': False,
+            'message': '会话不存在或无权限访问'
+        }), 404
+    
+    # 限制返回的消息数量
+    limit = int(request.args.get('limit', 100))
+    messages = session.messages[-limit:] if session.messages else []
+    
+    return jsonify({
+        'success': True,
+        'messages': messages
+    })
+
+
+@api_bp.route('/chat/sessions/<int:session_id>', methods=['DELETE'])
+def delete_chat_session(session_id):
+    """删除聊天会话"""
+    from backend.models.db_models import ChatSession
+    from backend.models import get_db
+    
+    user_id = request.args.get('user_id', 'default_user')
+    db = get_db()
+    
+    # 获取会话
+    session = db.query(ChatSession).filter_by(id=session_id, user_id=user_id).first()
+    
+    if not session:
+        return jsonify({
+            'success': False,
+            'message': '会话不存在或无权限访问'
+        }), 404
+    
+    # 删除会话
+    db.delete(session)
+    db.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': '会话已删除'
+    })
+
+
+@api_bp.route('/chat/sessions/<int:session_id>/clear', methods=['POST'])
+def clear_chat_session(session_id):
+    """清空聊天会话历史"""
+    from backend.models.db_models import ChatSession
+    from backend.models import get_db
+    
+    user_id = request.args.get('user_id', 'default_user')
+    db = get_db()
+    
+    # 获取会话
+    session = db.query(ChatSession).filter_by(id=session_id, user_id=user_id).first()
+    
+    if not session:
+        return jsonify({
+            'success': False,
+            'message': '会话不存在或无权限访问'
+        }), 404
+    
+    # 清空消息和上下文
+    session.messages = []
+    session.context = {}
+    
+    db.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': '会话已清空'
+    })
