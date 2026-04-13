@@ -205,6 +205,7 @@ def register_skill():
     
     # 保存到动态技能库
     dynamic_skills[skill_id] = {
+        'skill_id': skill_id,
         'name': skill_name,
         'description': description,
         'parameters': parameters,
@@ -221,6 +222,49 @@ def register_skill():
             'skill_id': skill_id,
             'name': skill_name
         }
+    })
+
+
+@skill_bp.route('/<skill_id>', methods=['PUT'])
+def update_skill(skill_id):
+    """更新动态技能"""
+    if skill_id in available_skills:
+        return jsonify({
+            'success': False,
+            'message': '不能更新内置技能'
+        }), 400
+    
+    if skill_id not in dynamic_skills:
+        return jsonify({
+            'success': False,
+            'message': f'Skill 不存在：{skill_id}'
+        }), 404
+    
+    data = request.get_json()
+    skill_name = data.get('name', dynamic_skills[skill_id].get('name'))
+    description = data.get('description', dynamic_skills[skill_id].get('description'))
+    category = data.get('category', dynamic_skills[skill_id].get('category'))
+    version = data.get('version', dynamic_skills[skill_id].get('version'))
+    code = data.get('code', dynamic_skills[skill_id].get('code'))
+    parameters = data.get('parameters', dynamic_skills[skill_id].get('parameters', []))
+    
+    # 更新动态技能
+    dynamic_skills[skill_id].update({
+        'name': skill_name,
+        'description': description,
+        'category': category,
+        'version': version,
+        'code': code,
+        'parameters': parameters,
+        'updated_at': __import__('datetime').datetime.now().isoformat()
+    })
+    
+    logger.info(f"成功更新技能：{skill_id}")
+    
+    return jsonify({
+        'success': True,
+        'message': f'Skill {skill_id} 更新成功',
+        'data': dynamic_skills[skill_id]
     })
 
 

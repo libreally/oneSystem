@@ -32,7 +32,7 @@ export const useSkillStore = defineStore('skill', () => {
     try {
       isLoading.value = true;
       const data = await skillApi.getAll();
-      skills.value = data.skills || [];
+      skills.value = data.data || [];
       return skills.value;
     } catch (err) {
       error.value = err.message;
@@ -46,8 +46,8 @@ export const useSkillStore = defineStore('skill', () => {
     try {
       isLoading.value = true;
       const data = await skillApi.getById(skillId);
-      selectedSkill.value = data.skill;
-      return data.skill;
+      selectedSkill.value = data.data;
+      return data.data;
     } catch (err) {
       error.value = err.message;
       throw err;
@@ -92,8 +92,9 @@ export const useSkillStore = defineStore('skill', () => {
     try {
       isLoading.value = true;
       const data = await skillApi.register(skillData);
-      skills.value.unshift(data.skill);
-      return data.skill;
+      // 后端返回的是 { "success": true, "message": "...", "data": { "skill_id": "...", "name": "..." } }
+      skills.value.unshift(data.data);
+      return data.data;
     } catch (err) {
       error.value = err.message;
       throw err;
@@ -106,11 +107,11 @@ export const useSkillStore = defineStore('skill', () => {
     try {
       isLoading.value = true;
       const data = await skillApi.update(skillId, skillData);
-      const index = skills.value.findIndex(s => s.id === skillId);
+      const index = skills.value.findIndex(s => s.id === skillId || s.skill_id === skillId || s.name === skillId);
       if (index !== -1) {
-        skills.value[index] = data.skill;
+        skills.value[index] = data.data;
       }
-      return data.skill;
+      return data.data;
     } catch (err) {
       error.value = err.message;
       throw err;
