@@ -2,8 +2,8 @@ import apiClient from './index';
 
 export const chatApi = {
   // Send message and get response
-  sendMessage(message, sessionId = null) {
-    return apiClient.post('/chat', { message, session_id: sessionId });
+  sendMessage(message, userId = 'default_user') {
+    return apiClient.post('/chat', { message, user_id: userId });
   },
 
   // Get chat history

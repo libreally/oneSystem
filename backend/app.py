@@ -67,6 +67,18 @@ def create_app():
     app.register_blueprint(skill_generator_bp)
     app.register_blueprint(permission_bp)
     
+    # 初始化 LLM 服务
+    init_llm_service(
+        api_key=LLM_API_KEY,
+        api_base=LLM_API_BASE,
+        model=LLM_MODEL
+    )
+    
+    # 初始化 AI 服务
+    from backend.services.ai_service import init_ai_service
+    from backend.services.skill_engine import skill_engine
+    init_ai_service(skill_engine)
+    
     # 初始化定时调度服务
     init_scheduler_service()
     
@@ -84,13 +96,6 @@ def create_app():
     
     # 初始化权限管理服务
     init_permission_service()
-    
-    # 初始化 LLM 服务
-    init_llm_service(
-        api_key=LLM_API_KEY,
-        api_base=LLM_API_BASE,
-        model=LLM_MODEL
-    )
     
     # 配置日志
     logging.basicConfig(

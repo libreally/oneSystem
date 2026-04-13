@@ -30,9 +30,9 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 SQLALCHEMY_ECHO = DEBUG
 
 # LLM 配置
-LLM_API_KEY = os.environ.get('LLM_API_KEY', '')
-LLM_API_BASE = os.environ.get('LLM_API_BASE', 'https://api.openai.com/v1')
-LLM_MODEL = os.environ.get('LLM_MODEL', 'gpt-3.5-turbo')
+LLM_API_KEY = os.environ.get('LLM_API_KEY', 'sk-lgpuyorgfzhmicnknlythkfvfocrhqrsnzbvqjkdosomxqgw')
+LLM_API_BASE = os.environ.get('LLM_API_BASE', 'https://api.siliconflow.cn/v1')
+LLM_MODEL = os.environ.get('LLM_MODEL', 'Qwen/Qwen3-8B')
 LLM_ENABLED = bool(LLM_API_KEY)
 
 # 定时任务配置

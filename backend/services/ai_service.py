@@ -206,7 +206,39 @@ class AIAssistantService:
                 'suggestions': intent_result['suggestions']
             }
         
-        # 如果没有匹配的 Skill，返回通用回复
+        # 尝试使用 LLM 服务生成真实响应
+        try:
+            from backend.services.llm_service import get_llm_service
+            llm_service = get_llm_service()
+            
+            if llm_service and llm_service.enabled:
+                # 构建消息列表
+                messages = [
+                    {
+                        "role": "system",
+                        "content": "你是一系统 AI 助手，一个专业的办公自动化助手，擅长处理文档、数据和任务管理。请根据用户的需求，提供专业、准确的回答。"
+                    },
+                    {
+                        "role": "user",
+                        "content": message
+                    }
+                ]
+                
+                # 调用 LLM 服务
+                llm_result = llm_service.chat_completion(messages, temperature=0.7, max_tokens=1000)
+                
+                if llm_result.get('success'):
+                    return {
+                        'success': True,
+                        'need_more_info': False,
+                        'intent': intent_result['intent'],
+                        'message': llm_result['response'],
+                        'suggestions': []
+                    }
+        except Exception as e:
+            logger.error(f"使用 LLM 服务失败：{str(e)}")
+        
+        # 如果没有匹配的 Skill 或 LLM 服务不可用，返回通用回复
         if not intent_result['skill_id']:
             return {
                 'success': True,

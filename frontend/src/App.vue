@@ -11,10 +11,6 @@
           <span>📊</span>
           <span>统一工作台</span>
         </router-link>
-        <router-link to="/chat" class="nav-item" active-class="active">
-          <span>💬</span>
-          <span>AI 助手</span>
-        </router-link>
         <router-link to="/tasks" class="nav-item" active-class="active">
           <span>✅</span>
           <span>任务管理</span>
@@ -88,19 +84,15 @@ import ChatWindow from './components/ChatWindow.vue'
 const chatStore = useChatStore()
 const searchText = ref('')
 
-onMounted(async () => {
-  try {
-    await chatStore.fetchSessions()
-  } catch (error) {
-    console.error('Failed to fetch sessions:', error)
-  }
+onMounted(() => {
+  // 初始化应用
+  console.log('App initialized')
 })
 
 const toggleChatWindow = () => {
-  const fab = document.querySelector('.ai-fab')
-  if (fab) {
-    fab.style.display = fab.style.display === 'none' ? 'flex' : 'none'
-  }
+  console.log('Before toggle - isChatWindowOpen:', chatStore.isChatWindowOpen)
+  chatStore.toggleChatWindow()
+  console.log('After toggle - isChatWindowOpen:', chatStore.isChatWindowOpen)
 }
 
 const handleSearchKeypress = async (event) => {
@@ -109,8 +101,7 @@ const handleSearchKeypress = async (event) => {
     searchText.value = ''
     
     // Show chat window
-    const fab = document.querySelector('.ai-fab')
-    if (fab) fab.style.display = 'none'
+    chatStore.openChatWindow()
     
     try {
       await chatStore.sendMessage(command)

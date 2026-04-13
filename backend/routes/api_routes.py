@@ -9,9 +9,6 @@ from backend.services.user_profile_service import user_profile_service
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
-# 初始化 AI 服务
-init_ai_service(skill_engine)
-
 
 @api_bp.route('/health', methods=['GET'])
 def health_check():

@@ -2,10 +2,11 @@
   <div class="ai-chat-window">
     <div class="ai-chat-header">
       <div style="display: flex; align-items: center; gap: 10px;">
-        <span style="font-size: 24px;">🤖</span>
+        <button @click="toggleContactPanel" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer;">☰</button>
+        <span style="font-size: 24px;">{{ currentChatAvatar }}</span>
         <div>
-          <div style="font-weight: 600;">AI 助手</div>
-          <div style="font-size: 12px; opacity: 0.9;">在线 | 随时为您服务</div>
+          <div style="font-weight: 600;">{{ currentChatTitle }}</div>
+          <div style="font-size: 12px; opacity: 0.9;">{{ currentChatStatus }}</div>
         </div>
       </div>
       <div style="display: flex; gap: 10px;">
@@ -14,30 +15,84 @@
       </div>
     </div>
     
-    <div class="ai-chat-body" ref="chatBodyRef">
-      <div 
-        v-for="message in chatStore.messages" 
-        :key="message.id"
-        class="message" 
-        :class="message.role === 'user' ? 'user' : 'ai'"
-      >
-        <div class="message-avatar" :class="message.role === 'user' ? 'user-avatar-chat' : 'ai-avatar'">
-          {{ message.role === 'user' ? '张' : '🤖' }}
+    <div class="chat-container" :class="{ 'contact-panel-active': isContactPanelOpen }">
+      <!-- 联系人列表面板 -->
+      <div class="contact-panel">
+        <div class="contact-panel-header">
+          <div style="font-weight: 600; padding: 15px;">联系人</div>
         </div>
-        <div class="message-wrapper">
-          <div class="message-content">{{ message.content }}</div>
-          <div class="message-footer">
-            <span class="message-time">{{ formatTime(message.timestamp) }}</span>
+        <div class="contact-list">
+          <div class="contact-item" @click="switchToChat('ai')">
+            <div class="contact-avatar">🤖</div>
+            <div class="contact-info">
+              <div class="contact-name">AI自动化助手</div>
+              <div class="contact-status online">在线</div>
+            </div>
+          </div>
+          <div class="contact-item" @click="switchToChat('李四')">
+            <div class="contact-avatar">李</div>
+            <div class="contact-info">
+              <div class="contact-name">李四</div>
+              <div class="contact-status online">在线</div>
+            </div>
+          </div>
+          <div class="contact-item" @click="switchToChat('王五')">
+            <div class="contact-avatar">王</div>
+            <div class="contact-info">
+              <div class="contact-name">王五</div>
+              <div class="contact-status offline">离线</div>
+            </div>
+          </div>
+          <div class="contact-item" @click="switchToChat('赵六')">
+            <div class="contact-avatar">赵</div>
+            <div class="contact-info">
+              <div class="contact-name">赵六</div>
+              <div class="contact-status online">在线</div>
+            </div>
+          </div>
+          <div class="contact-item" @click="switchToChat('孙七')">
+            <div class="contact-avatar">孙</div>
+            <div class="contact-info">
+              <div class="contact-name">孙七</div>
+              <div class="contact-status busy">忙碌</div>
+            </div>
+          </div>
+          <div class="contact-item" @click="switchToChat('周八')">
+            <div class="contact-avatar">周</div>
+            <div class="contact-info">
+              <div class="contact-name">周八</div>
+              <div class="contact-status online">在线</div>
+            </div>
           </div>
         </div>
       </div>
-      <div v-if="chatStore.isLoading" class="message ai loading">
-        <div class="message-avatar ai-avatar">🤖</div>
-        <div class="message-content">
-          <div class="loading-indicator">
-            <span class="loading-dot"></span>
-            <span class="loading-dot"></span>
-            <span class="loading-dot"></span>
+      
+      <div class="ai-chat-body" ref="chatBodyRef">
+        <div 
+          v-for="message in chatStore.messages" 
+          :key="message.id"
+          class="message" 
+          :class="message.role === 'user' ? 'user' : 'ai'"
+        >
+          <div class="message-avatar" :class="message.role === 'user' ? 'user-avatar-chat' : 'ai-avatar'">
+            {{ message.role === 'user' ? '张' : '🤖' }}
+          </div>
+          <div class="message-wrapper">
+            <div class="message-content">{{ message.content }}</div>
+            <div class="message-footer">
+              <span class="message-time">{{ formatTime(message.timestamp) }}</span>
+              <span v-if="message.role === 'user'" class="message-status delivered">已送达</span>
+            </div>
+          </div>
+        </div>
+        <div v-if="chatStore.isLoading" class="message ai loading">
+          <div class="message-avatar ai-avatar">🤖</div>
+          <div class="message-content">
+            <div class="loading-indicator">
+              <span class="loading-dot"></span>
+              <span class="loading-dot"></span>
+              <span class="loading-dot"></span>
+            </div>
           </div>
         </div>
       </div>
@@ -56,13 +111,31 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch } from 'vue'
+import { ref, nextTick, watch, computed } from 'vue'
 import { useChatStore } from '../stores/chat'
 import { formatDate } from '@/utils/helpers'
 
 const chatStore = useChatStore()
 const inputMessage = ref('')
 const chatBodyRef = ref(null)
+const isContactPanelOpen = ref(false)
+const currentChat = ref('ai')
+
+const currentChatAvatar = computed(() => {
+  return currentChat.value === 'ai' ? '🤖' : currentChat.value.charAt(0)
+})
+
+const currentChatTitle = computed(() => {
+  return currentChat.value === 'ai' ? 'AI自动化助手' : currentChat.value
+})
+
+const currentChatStatus = computed(() => {
+  if (currentChat.value === 'ai') {
+    return '在线 | 随时为您服务'
+  } else {
+    return '在线 | 正在聊天'
+  }
+})
 
 const sendMessage = async () => {
   if (!inputMessage.value.trim()) return
@@ -80,23 +153,46 @@ const handleKeypress = (event) => {
   }
 }
 
+const toggleContactPanel = () => {
+  isContactPanelOpen.value = !isContactPanelOpen.value
+}
+
+const switchToChat = (name) => {
+  currentChat.value = name
+  isContactPanelOpen.value = false
+  // 这里可以添加加载对应聊天历史的逻辑
+  chatStore.clearMessages()
+  
+  // 添加欢迎消息
+  if (currentChat.value === 'ai') {
+    chatStore.messages.push({
+      id: Date.now(),
+      role: 'assistant',
+      content: '您好！我是AI自动化助手，可以帮您：\n• 处理公文和文档\n• 生成报表和总结\n• 管理任务和督办\n• 数据统计和分析\n\n请直接告诉我您的需求，例如：\n"帮我生成周报"\n"检查这个文件的敏感词"\n"合并这两个Excel表格"',
+      timestamp: new Date().toISOString()
+    })
+  } else {
+    chatStore.messages.push({
+      id: Date.now(),
+      role: 'assistant',
+      content: `您好！我是${currentChat.value}，有什么可以帮您的吗？`,
+      timestamp: new Date().toISOString()
+    })
+  }
+}
+
 const formatTime = (timestamp) => {
   if (!timestamp) return ''
   return formatDate(timestamp, 'HH:mm')
 }
 
 const closeChat = () => {
-  const fab = document.querySelector('.ai-fab')
-  if (fab) fab.style.display = 'flex'
+  chatStore.closeChatWindow()
 }
 
-const clearHistory = async () => {
+const clearHistory = () => {
   if (confirm('确定要清空当前会话历史吗？')) {
-    try {
-      await chatStore.clearContext()
-    } catch (error) {
-      console.error('Clear history failed:', error)
-    }
+    chatStore.clearMessages()
   }
 }
 
@@ -125,17 +221,11 @@ watch(() => chatStore.messages.length, () => {
   overflow: hidden;
 }
 
-.ai-chat-window.contact-panel-active .ai-chat-body {
-  margin-left: 280px;
-}
-
-.ai-chat-header {
-  background: linear-gradient(135deg, rgb(0, 101, 105) 0%, rgb(0, 130, 136) 100%);
-  color: white;
-  padding: 15px 20px;
+.chat-container {
+  flex: 1;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  position: relative;
+  overflow: hidden;
 }
 
 .contact-panel {
@@ -149,10 +239,36 @@ watch(() => chatStore.messages.length, () => {
   z-index: 1001;
   transform: translateX(-100%);
   transition: transform 0.3s ease;
+  border-right: 1px solid #e8e8e8;
+  display: flex;
+  flex-direction: column;
 }
 
-.contact-panel.active {
+.contact-list {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.chat-container.contact-panel-active .contact-panel {
   transform: translateX(0);
+}
+
+.chat-container.contact-panel-active .ai-chat-body {
+  margin-left: 280px;
+}
+
+.ai-chat-header {
+  background: linear-gradient(135deg, rgb(0, 101, 105) 0%, rgb(0, 130, 136) 100%);
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1002;
+  position: relative;
 }
 
 .contact-panel-header {
@@ -372,6 +488,8 @@ watch(() => chatStore.messages.length, () => {
   border-top: 1px solid #e8e8e8;
   display: flex;
   gap: 10px;
+  position: relative;
+  z-index: 999;
 }
 
 .ai-chat-input input {
