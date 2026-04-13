@@ -1,0 +1,49 @@
+[
+  {
+    "role_type": "admin",
+    "permissions": [
+      "system:manage",
+      "user:manage",
+      "role:manage",
+      "config:view",
+      "config:edit",
+      "config:import_export",
+      "skill:view",
+      "skill:create",
+      "skill:edit",
+      "skill:publish",
+      "task:view",
+      "task:create",
+      "task:edit",
+      "task:delete",
+      "integration:view",
+      "integration:edit",
+      "wps:access",
+      "wps:edit",
+      "file:retrieval",
+      "file:access"
+    ]
+  },
+  {
+    "role_type": "user",
+    "permissions": [
+      "config:view",
+      "skill:view",
+      "skill:create",
+      "task:view",
+      "task:create",
+      "task:edit",
+      "integration:view",
+      "wps:access",
+      "file:retrieval",
+      "file:access"
+    ]
+  },
+  {
+    "role_type": "guest",
+    "permissions": [
+      "skill:view",
+      "task:view"
+    ]
+  }
+]

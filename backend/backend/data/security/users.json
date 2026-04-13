@@ -1,0 +1,18 @@
+[
+  {
+    "user_id": "admin",
+    "username": "admin",
+    "role": "admin",
+    "created_at": "2026-04-13T11:46:43.049972",
+    "updated_at": "2026-04-13T11:46:43.049974",
+    "last_login": null
+  },
+  {
+    "user_id": "test",
+    "username": "test",
+    "role": "user",
+    "created_at": "2026-04-13T11:46:43.049991",
+    "updated_at": "2026-04-13T11:46:43.049992",
+    "last_login": null
+  }
+]

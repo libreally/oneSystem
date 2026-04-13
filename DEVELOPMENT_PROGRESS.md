@@ -4,26 +4,30 @@
 
 ### ✅ 核心架构
 - [x] Flask 后端框架搭建
-- [x] 7 个路由蓝图（API、Skills、任务、配置、调度、文件检索、用户画像）
-- [x] 服务层设计（AI 助手、Skill 引擎、定时调度、文件检索、用户画像）
+- [x] 12 个路由蓝图（API、Skills、任务、配置、调度、文件检索、用户画像、系统集成、WPS、Skill 生成、权限管理）
+- [x] 11 个服务层（AI 助手、Skill 引擎、LLM、定时调度、文件检索、用户画像、系统集成、WPS、配置中心、Skill 生成、权限管理）
 - [x] Skills 能力模块体系
+- [x] Vue 3 前端框架
+- [x] Pinia 状态管理
+- [x] Vue Router 路由管理
+- [x] Axios HTTP 客户端
 
 ### ✅ AI 助手服务 (`backend/services/ai_service.py`)
-- [x] 意图识别（正则模式匹配 5 类意图）
+- [x] 意图识别（正则模式匹配多种意图）
 - [x] 参数提取与验证
 - [x] 缺失参数补充询问机制
 - [x] Skill 调度执行
 
 ### ✅ Skills 能力体系
-- [x] **文档处理 Skill** (`document_skill.py`)
+- [x] **文档处理 Skill** (`backend/skills/document_skill.py`)
   - 公文转换（通知、报告、请示等）
   - 格式调整
   - 文档生成
-- [x] **敏感词检查 Skill** (`sensitive_word_skill.py`)
+- [x] **敏感词检查 Skill** (`backend/skills/sensitive_word_skill.py`)
   - 敏感词检测
   - 敏感词替换
   - 敏感词标记
-- [x] **数据合并 Skill** (`data_merge_skill.py`)
+- [x] **数据合并 Skill** (`backend/skills/data_merge_skill.py`)
   - Excel/CSV 文件合并
   - 数据比对
   - 差异分析
@@ -42,88 +46,120 @@
 - [x] 会话知识库管理
 - [x] 文件内容读取
 
-### ✅ 用户画像与个性化 (新增)
-- [x] **用户画像服务** (`backend/services/user_profile_service.py`)
-  - 用户偏好管理（默认文档类型、敏感词级别、主题等）
-  - 使用行为记录与分析
-  - 常用技能统计
-  - 个性化推荐算法
-  - 数据持久化（JSON 存储）
-- [x] **用户画像 API** (`backend/routes/user_profile_routes.py`)
-  - GET `/api/user-profile/<user_id>` - 获取用户画像
-  - PUT `/api/user-profile/<user_id>/preferences` - 更新偏好
-  - GET `/api/user-profile/<user_id>/recommendations` - 获取推荐
-  - GET `/api/user-profile/<user_id>/statistics` - 获取统计
-  - DELETE `/api/user-profile/<user_id>` - 删除画像
-  - POST `/api/user-profile/<user_id>/usage` - 记录使用行为
-- [x] **集成到聊天接口**
-  - 自动记录用户使用行为
-  - 基于画像的个性化推荐
-  - 时间相关的智能推荐（如周五推荐周报）
+### ✅ 用户画像与个性化 (`backend/services/user_profile_service.py`)
+- [x] 用户偏好管理（默认文档类型、敏感词级别、主题等）
+- [x] 使用行为记录与分析
+- [x] 常用技能统计
+- [x] 个性化推荐算法
+- [x] 数据持久化（JSON 存储 + SQLite）
+
+### ✅ WPS 本地集成 (`backend/services/wps_integration_service.py`)
+- [x] 识别当前 WPS 活动文档
+- [x] 打开指定本地文件
+- [x] 处理 Word 文档（读取内容、提取文本、提取表格）
+- [x] 处理 Excel 文档（读取内容、提取表格）
+- [x] 文档转换处理
+
+### ✅ 配置中心 (`backend/services/config_service.py`)
+- [x] 公共配置管理
+- [x] 个人配置管理
+- [x] 配置分类（模板、敏感词、督办规则、推荐规则、定时策略）
+- [x] 配置权限划分
+
+### ✅ Skill 动态生成 (`backend/services/skill_generator_service.py`)
+- [x] 根据需求描述生成 skill 定义
+- [x] 生成输入输出定义
+- [x] 生成执行逻辑
+- [x] 生成完整 skill 代码
+- [x] Skill 模板管理
+- [x] Skill 测试与发布
+
+### ✅ 系统集成 (`backend/services/integration_service.py`)
+- [x] OA 系统适配器
+- [x] ERP 系统适配器
+- [x] CRM 系统适配器
+- [x] 统一集成接口
+
+### ✅ 权限管理 (`backend/services/permission_service.py`)
+- [x] 用户认证
+- [x] 角色管理（admin、user、guest）
+- [x] 权限控制
+- [x] 用户管理（CRUD）
+
+### ✅ 前端页面
+- [x] 工作台页面 (Dashboard.vue)
+- [x] AI 助手页面 (Chat.vue)
+- [x] 任务管理页面 (Tasks.vue)
+- [x] 技能中心页面 (Skills.vue)
+- [x] 定时调度页面 (Schedule.vue)
+- [x] 文档检索页面 (Documents.vue)
+- [x] 报表中心页面 (Reports.vue)
+- [x] 配置中心页面 (Config.vue)
+- [x] 个人中心页面 (Profile.vue)
+- [x] 404 页面 (NotFound.vue)
+- [x] 路由配置
+- [x] API 模块（11 个 API 服务）
 
 ### ✅ API 接口完整实现
 - [x] `/api/chat` - AI 聊天（已集成用户画像）
 - [x] `/api/skills/*` - Skill 管理
-- [x] `/api/scheduler/*` - 定时任务
-- [x] `/api/files/*` - 文件检索
-- [x] `/api/user-profile/*` - 用户画像（新增）
-- [x] `/api/recommendations` - 智能推荐（已升级为个性化推荐）
+- [x] `/api/tasks/*` - 任务管理
+- [x] `/api/config/*` - 配置中心
+- [x] `/api/schedule/*` - 定时任务
+- [x] `/api/documents/*` - 文件检索
+- [x] `/api/user/*` - 用户画像
+- [x] `/api/integration/*` - 系统集成
+- [x] `/api/wps/*` - WPS 集成
+- [x] `/api/skill-generator/*` - Skill 生成
+- [x] `/api/permission/*` - 权限管理
 
 ### ✅ 配置数据
 - [x] 敏感词库模板 (`backend/data/sensitive_words/words.txt`)
 - [x] 公文模板（通知、报告）(`backend/data/templates/`)
-- [x] 用户画像存储目录 (`backend/data/user_profiles/`)
+- [x] SQLite 数据库 (`backend/data/yixitong.db`)
 
-## 待实现模块（按优先级排序）
+## 待优化模块
 
-### 🔄 中等优先级
-- [ ] **数据库持久化**
-  - 使用 SQLite/PostgreSQL 替代 JSON 存储
-  - 用户数据、任务历史、执行记录持久化
-  - 数据迁移脚本
+### 🔄 持续优化
+- [ ] 增强 LLM 服务配置（当前未启用）
+- [ ] 完善前端界面细节
+- [ ] 优化用户体验
 
-- [ ] **前端界面完善**
-  - 对接所有 API 接口
-  - 用户画像展示与管理界面
-  - 个性化推荐展示
-  - 使用统计可视化
-
-- [ ] **Skill 动态生成能力**
-  - 基于 LLM 的动态 Skill 生成
-  - Skill 组合编排
-  - 自定义 Skill 注册
-
-### 📅 低优先级（最后实现）
-- [ ] **WPS 本地集成**
-  - WPS Office SDK 集成
-  - 本地文档直接编辑
-  - WPS 插件开发
-  - 实时协作编辑
-
-- [ ] **高级功能**
-  - 多用户权限管理
-  - 团队协作功能
-  - 审计日志
-  - 数据导出/导入
+### 📋 后续计划
+- [ ] 多用户权限管理增强
+- [ ] 团队协作功能
+- [ ] 审计日志完善
+- [ ] 数据导出/导入
 
 ## 技术栈
 
-- **后端**: Python 3.12 + Flask
+- **后端**: Python 3.12 + Flask 3.1
+- **数据库**: SQLite (Flask-SQLAlchemy)
 - **数据处理**: python-docx, pandas, openpyxl
-- **定时任务**: APScheduler
-- **文件检索**: 原生 Python + 关键词匹配
-- **数据存储**: JSON 文件（临时）→ 待迁移至数据库
-- **前端**: HTML5 + CSS3 + JavaScript (ai-v1.html)
+- **定时任务**: schedule
+- **WPS 集成**: win32com (Windows COM)
+- **前端**: Vue 3.5 + Vue Router 4 + Pinia 3 + Vite 5
+- **HTTP 客户端**: Axios
 
 ## 快速启动
 
+### 后端启动
 ```bash
-cd /workspace
+cd d:\work_document\oneSystem\backend
 pip install -r requirements.txt
-python backend/app.py
+python app.py
 ```
 
-访问地址：http://localhost:5000
+### 前端启动
+```bash
+cd d:\work_document\oneSystem\frontend
+npm install
+npm run dev
+```
+
+### 访问地址
+- 后端服务: http://localhost:5000
+- 前端页面: http://localhost:5173
 
 ## API 测试示例
 
@@ -139,26 +175,26 @@ curl -X POST http://localhost:5000/api/chat \
   -d '{"message": "帮我检查这篇材料的敏感词", "user_id": "user_001"}'
 ```
 
-### 3. 获取用户画像
+### 3. 用户登录
 ```bash
-curl http://localhost:5000/api/user-profile/user_001
-```
-
-### 4. 获取个性化推荐
-```bash
-curl "http://localhost:5000/api/recommendations?user_id=user_001"
-```
-
-### 5. 更新用户偏好
-```bash
-curl -X PUT http://localhost:5000/api/user-profile/user_001/preferences \
+curl -X POST http://localhost:5000/api/permission/login \
   -H "Content-Type: application/json" \
-  -d '{"key": "default_doc_type", "value": "报告"}'
+  -d '{"username": "admin", "password": "admin123"}'
 ```
 
-## 下一步计划
+### 4. 获取 WPS 活动文档
+```bash
+curl http://localhost:5000/api/wps/active
+```
 
-1. **完善前端对接** - 将用户画像和个性化推荐集成到 ai-v1.html
-2. **数据库迁移** - 引入 SQLite 进行数据持久化
-3. **增强意图识别** - 引入更智能的 NLP 模型
-4. **WPS 集成准备** - 调研 WPS SDK，设计集成方案
+### 5. 生成 Skill
+```bash
+curl -X POST http://localhost:5000/api/skill-generator/generate \
+  -H "Content-Type: application/json" \
+  -d '{"description": "帮我自动生成周报"}'
+```
+
+### 6. 获取配置列表
+```bash
+curl http://localhost:5000/api/config
+```

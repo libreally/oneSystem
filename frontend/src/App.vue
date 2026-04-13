@@ -11,6 +11,14 @@
           <span>📊</span>
           <span>统一工作台</span>
         </router-link>
+        <router-link to="/chat" class="nav-item" active-class="active">
+          <span>💬</span>
+          <span>AI 助手</span>
+        </router-link>
+        <router-link to="/tasks" class="nav-item" active-class="active">
+          <span>✅</span>
+          <span>任务管理</span>
+        </router-link>
         <router-link to="/skills" class="nav-item" active-class="active">
           <span>🛠️</span>
           <span>Skills 管理</span>
@@ -30,6 +38,10 @@
         <router-link to="/reports" class="nav-item" active-class="active">
           <span>📈</span>
           <span>报表中心</span>
+        </router-link>
+        <router-link to="/profile" class="nav-item" active-class="active">
+          <span>👤</span>
+          <span>个人中心</span>
         </router-link>
       </nav>
     </aside>

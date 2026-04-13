@@ -261,3 +261,131 @@ export const userApi = {
     return apiClient.get('/user/recommendations', { params: { limit } });
   }
 };
+
+export const wpsApi = {
+  // Get active WPS document
+  getActiveDocument() {
+    return apiClient.get('/wps/active');
+  },
+
+  // Open WPS file
+  openFile(filePath) {
+    return apiClient.post('/wps/open', { file_path: filePath });
+  },
+
+  // Get document content
+  getDocumentContent(documentType, filePath = null) {
+    return apiClient.post('/wps/content', { document_type: documentType, file_path: filePath });
+  },
+
+  // Get document tables
+  getDocumentTables(filePath = null) {
+    return apiClient.post('/wps/tables', { file_path: filePath });
+  },
+
+  // Extract text from document
+  extractText(filePath = null) {
+    return apiClient.post('/wps/extract-text', { file_path: filePath });
+  },
+
+  // Extract tables from document
+  extractTables(filePath = null) {
+    return apiClient.post('/wps/extract-tables', { file_path: filePath });
+  },
+
+  // Process document
+  processDocument(filePath, processType) {
+    return apiClient.post('/wps/process', { file_path: filePath, process_type: processType });
+  }
+};
+
+export const skillGeneratorApi = {
+  // Generate skill from description
+  generateFromDescription(description) {
+    return apiClient.post('/skill-generator/generate', { description });
+  },
+
+  // Generate skill template
+  generateTemplate(skillType, params = {}) {
+    return apiClient.post('/skill-generator/template', { skill_type: skillType, params });
+  },
+
+  // Generate input/output definitions
+  generateIO(skillType, description) {
+    return apiClient.post('/skill-generator/io', { skill_type: skillType, description });
+  },
+
+  // Validate generated skill
+  validateSkill(skillData) {
+    return apiClient.post('/skill-generator/validate', skillData);
+  }
+};
+
+export const integrationApi = {
+  // Get all integrations
+  getAll() {
+    return apiClient.get('/integration');
+  },
+
+  // Get integration by type
+  getByType(integrationType) {
+    return apiClient.get(`/integration/${integrationType}`);
+  },
+
+  // Test integration connection
+  testConnection(integrationType, config) {
+    return apiClient.post(`/integration/${integrationType}/test`, config);
+  },
+
+  // Execute integration action
+  executeAction(integrationType, action, params) {
+    return apiClient.post(`/integration/${integrationType}/execute`, { action, params });
+  },
+
+  // Sync data from integration
+  syncData(integrationType, syncType, params = {}) {
+    return apiClient.post(`/integration/${integrationType}/sync`, { sync_type: syncType, params });
+  }
+};
+
+export const permissionApi = {
+  // User login
+  login(username, password) {
+    return apiClient.post('/permission/login', { username, password });
+  },
+
+  // Check permission
+  checkPermission(userId, permission) {
+    return apiClient.post('/permission/check', { user_id: userId, permission });
+  },
+
+  // List all users
+  listUsers() {
+    return apiClient.get('/permission/users');
+  },
+
+  // Create user
+  createUser(username, password, role = 'user') {
+    return apiClient.post('/permission/users', { username, password, role });
+  },
+
+  // Update user role
+  updateUserRole(userId, role) {
+    return apiClient.put(`/permission/users/${userId}/role`, { role });
+  },
+
+  // Delete user
+  deleteUser(userId) {
+    return apiClient.delete(`/permission/users/${userId}`);
+  },
+
+  // List all roles
+  listRoles() {
+    return apiClient.get('/permission/roles');
+  },
+
+  // Update role permissions
+  updateRolePermissions(roleType, permissions) {
+    return apiClient.put(`/permission/roles/${roleType}/permissions`, { permissions });
+  }
+};

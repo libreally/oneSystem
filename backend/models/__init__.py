@@ -29,7 +29,7 @@ def init_db(app):
             db.session.add(pref)
             
             db.session.commit()
-            print("✓ 默认管理员用户已创建 (用户名：admin)")
+            print("默认管理员用户已创建 (用户名：admin)")
         
         # 创建内置 Skills
         builtin_skills = [
@@ -75,7 +75,7 @@ def init_db(app):
                 db.session.add(skill)
         
         db.session.commit()
-        print("✓ 内置 Skills 已初始化")
+        print("内置 Skills 已初始化")
 
 
 def get_db():

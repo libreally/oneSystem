@@ -139,3 +139,85 @@ def record_usage(user_id):
             'success': False,
             'message': str(e)
         }), 500
+
+
+@user_profile_bp.route('/<user_id>/personality', methods=['GET'])
+def get_personality_traits(user_id):
+    """获取用户个性特征"""
+    try:
+        traits = user_profile_service.get_personality_traits(user_id)
+        return jsonify({
+            'success': True,
+            'data': traits
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+@user_profile_bp.route('/<user_id>/personality', methods=['PUT'])
+def update_personality_traits(user_id):
+    """更新用户个性特征"""
+    try:
+        data = request.get_json()
+        traits = data.get('traits', {})
+        
+        if not traits:
+            return jsonify({
+                'success': False,
+                'message': '缺少 traits 参数'
+            }), 400
+        
+        success = user_profile_service.update_personality_traits(user_id, traits)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': '个性特征更新成功'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': '个性特征更新失败'
+            }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+@user_profile_bp.route('/<user_id>/behavior-analysis', methods=['GET'])
+def get_behavior_analysis(user_id):
+    """获取用户行为分析报告"""
+    try:
+        analysis = user_profile_service.get_behavior_analysis(user_id)
+        return jsonify({
+            'success': True,
+            'data': analysis
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+@user_profile_bp.route('/<user_id>/time-based-recommendations', methods=['GET'])
+def get_time_based_recommendations(user_id):
+    """获取基于时间的推荐"""
+    try:
+        recommendations = user_profile_service.get_time_based_recommendations(user_id)
+        return jsonify({
+            'success': True,
+            'data': {
+                'recommended_skills': recommendations
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500

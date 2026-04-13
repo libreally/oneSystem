@@ -20,11 +20,18 @@ from backend.routes import (
     scheduler_bp, 
     file_retrieval_bp, 
     user_profile_bp,
-    integration_bp
+    integration_bp,
+    wps_bp,
+    skill_generator_bp,
+    permission_bp
 )
 from backend.services.scheduler_service import init_scheduler_service
 from backend.services.integration_service import init_integration_service
 from backend.services.llm_service import init_llm_service
+from backend.services.wps_integration_service import init_wps_integration_service
+from backend.services.config_service import init_config_service
+from backend.services.skill_generator_service import init_skill_generator_service
+from backend.services.permission_service import init_permission_service
 from backend.models import init_db
 
 
@@ -56,12 +63,27 @@ def create_app():
     app.register_blueprint(file_retrieval_bp)
     app.register_blueprint(user_profile_bp)
     app.register_blueprint(integration_bp)
+    app.register_blueprint(wps_bp)
+    app.register_blueprint(skill_generator_bp)
+    app.register_blueprint(permission_bp)
     
     # 初始化定时调度服务
     init_scheduler_service()
     
     # 初始化系统集成服务
     init_integration_service()
+    
+    # 初始化 WPS 集成服务
+    init_wps_integration_service()
+    
+    # 初始化配置服务
+    init_config_service()
+    
+    # 初始化 Skill 生成服务
+    init_skill_generator_service()
+    
+    # 初始化权限管理服务
+    init_permission_service()
     
     # 初始化 LLM 服务
     init_llm_service(

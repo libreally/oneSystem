@@ -330,6 +330,327 @@ class AdapterFactory:
 AdapterFactory.register_adapter(SystemType.CUSTOM, MockSystemAdapter)
 
 
+class OASystemAdapter(BaseSystemAdapter):
+    """OA 系统适配器"""
+    
+    def connect(self) -> bool:
+        """连接到 OA 系统"""
+        logger.info(f"连接到 OA 系统：{self.config.system_name}")
+        # 实际实现需要根据具体 OA 系统的 API 进行连接
+        self.connected = True
+        return True
+    
+    def disconnect(self):
+        """断开连接"""
+        logger.info(f"断开 OA 系统连接：{self.config.system_name}")
+        self.connected = False
+    
+    def get_tasks(self, filters: Dict[str, Any] = None) -> List[TaskItem]:
+        """获取任务列表"""
+        if not self.connected:
+            raise Exception("未连接到系统")
+        
+        # 实际实现需要调用 OA 系统的 API
+        # 这里返回模拟数据
+        tasks = [
+            TaskItem(
+                task_id=f"{self.config.system_id}_approval_001",
+                title="审批：采购申请单",
+                description="采购部门提交的办公用品采购申请",
+                status='pending',
+                priority='high',
+                source_system=self.config.system_id,
+                assignee='admin',
+                due_date=datetime.now().replace(hour=17, minute=0),
+                metadata={'form_id': 'PR001', 'amount': 3500}
+            ),
+            TaskItem(
+                task_id=f"{self.config.system_id}_leave_001",
+                title="审批：请假申请",
+                description="张三的年假申请，共计3天",
+                status='in_progress',
+                priority='medium',
+                source_system=self.config.system_id,
+                assignee='admin',
+                due_date=datetime.now().replace(hour=12, minute=0),
+                metadata={'employee_id': 'E001', 'days': 3}
+            )
+        ]
+        
+        # 应用过滤器
+        if filters:
+            if 'status' in filters:
+                tasks = [t for t in tasks if t.status == filters['status']]
+            if 'priority' in filters:
+                tasks = [t for t in tasks if t.priority == filters['priority']]
+        
+        return tasks
+    
+    def create_task(self, task_data: Dict[str, Any]) -> TaskItem:
+        """创建任务"""
+        task = TaskItem(
+            task_id=f"{self.config.system_id}_task_{int(datetime.now().timestamp())}",
+            title=task_data.get('title', '新任务'),
+            description=task_data.get('description', ''),
+            status=task_data.get('status', 'pending'),
+            priority=task_data.get('priority', 'medium'),
+            source_system=self.config.system_id,
+            assignee=task_data.get('assignee', ''),
+            metadata=task_data.get('metadata', {})
+        )
+        logger.info(f"在 OA 系统创建任务：{task.task_id}")
+        return task
+    
+    def update_task(self, task_id: str, updates: Dict[str, Any]) -> TaskItem:
+        """更新任务"""
+        # 实际实现需要调用 OA 系统的 API
+        # 这里返回模拟数据
+        task = TaskItem(
+            task_id=task_id,
+            title=updates.get('title', '任务标题'),
+            description=updates.get('description', ''),
+            status=updates.get('status', 'pending'),
+            priority=updates.get('priority', 'medium'),
+            source_system=self.config.system_id,
+            assignee=updates.get('assignee', ''),
+            metadata=updates.get('metadata', {})
+        )
+        logger.info(f"在 OA 系统更新任务：{task_id}")
+        return task
+    
+    def delete_task(self, task_id: str) -> bool:
+        """删除任务"""
+        logger.info(f"在 OA 系统删除任务：{task_id}")
+        return True
+    
+    def get_user_info(self, user_id: str) -> Dict[str, Any]:
+        """获取用户信息"""
+        return {
+            'user_id': user_id,
+            'username': user_id,
+            'display_name': f'OA 用户 {user_id}',
+            'email': f'{user_id}@oa.example.com',
+            'department': '行政部',
+            'role': 'employee'
+        }
+
+
+class ERPSystemAdapter(BaseSystemAdapter):
+    """ERP 系统适配器"""
+    
+    def connect(self) -> bool:
+        """连接到 ERP 系统"""
+        logger.info(f"连接到 ERP 系统：{self.config.system_name}")
+        # 实际实现需要根据具体 ERP 系统的 API 进行连接
+        self.connected = True
+        return True
+    
+    def disconnect(self):
+        """断开连接"""
+        logger.info(f"断开 ERP 系统连接：{self.config.system_name}")
+        self.connected = False
+    
+    def get_tasks(self, filters: Dict[str, Any] = None) -> List[TaskItem]:
+        """获取任务列表"""
+        if not self.connected:
+            raise Exception("未连接到系统")
+        
+        # 实际实现需要调用 ERP 系统的 API
+        # 这里返回模拟数据
+        tasks = [
+            TaskItem(
+                task_id=f"{self.config.system_id}_po_001",
+                title="处理：采购订单",
+                description="供应商提交的采购订单需要确认",
+                status='pending',
+                priority='high',
+                source_system=self.config.system_id,
+                assignee='admin',
+                due_date=datetime.now().replace(hour=15, minute=0),
+                metadata={'po_id': 'PO001', 'supplier': '供应商A'}
+            ),
+            TaskItem(
+                task_id=f"{self.config.system_id}_inv_001",
+                title="处理：库存盘点",
+                description="月底库存盘点任务",
+                status='in_progress',
+                priority='medium',
+                source_system=self.config.system_id,
+                assignee='admin',
+                due_date=datetime.now().replace(day=30, hour=23, minute=59),
+                metadata={'warehouse': '主仓库'}
+            )
+        ]
+        
+        # 应用过滤器
+        if filters:
+            if 'status' in filters:
+                tasks = [t for t in tasks if t.status == filters['status']]
+            if 'priority' in filters:
+                tasks = [t for t in tasks if t.priority == filters['priority']]
+        
+        return tasks
+    
+    def create_task(self, task_data: Dict[str, Any]) -> TaskItem:
+        """创建任务"""
+        task = TaskItem(
+            task_id=f"{self.config.system_id}_task_{int(datetime.now().timestamp())}",
+            title=task_data.get('title', '新任务'),
+            description=task_data.get('description', ''),
+            status=task_data.get('status', 'pending'),
+            priority=task_data.get('priority', 'medium'),
+            source_system=self.config.system_id,
+            assignee=task_data.get('assignee', ''),
+            metadata=task_data.get('metadata', {})
+        )
+        logger.info(f"在 ERP 系统创建任务：{task.task_id}")
+        return task
+    
+    def update_task(self, task_id: str, updates: Dict[str, Any]) -> TaskItem:
+        """更新任务"""
+        # 实际实现需要调用 ERP 系统的 API
+        # 这里返回模拟数据
+        task = TaskItem(
+            task_id=task_id,
+            title=updates.get('title', '任务标题'),
+            description=updates.get('description', ''),
+            status=updates.get('status', 'pending'),
+            priority=updates.get('priority', 'medium'),
+            source_system=self.config.system_id,
+            assignee=updates.get('assignee', ''),
+            metadata=updates.get('metadata', {})
+        )
+        logger.info(f"在 ERP 系统更新任务：{task_id}")
+        return task
+    
+    def delete_task(self, task_id: str) -> bool:
+        """删除任务"""
+        logger.info(f"在 ERP 系统删除任务：{task_id}")
+        return True
+    
+    def get_user_info(self, user_id: str) -> Dict[str, Any]:
+        """获取用户信息"""
+        return {
+            'user_id': user_id,
+            'username': user_id,
+            'display_name': f'ERP 用户 {user_id}',
+            'email': f'{user_id}@erp.example.com',
+            'department': '财务部',
+            'role': 'employee'
+        }
+
+
+class CRMSystemAdapter(BaseSystemAdapter):
+    """CRM 系统适配器"""
+    
+    def connect(self) -> bool:
+        """连接到 CRM 系统"""
+        logger.info(f"连接到 CRM 系统：{self.config.system_name}")
+        # 实际实现需要根据具体 CRM 系统的 API 进行连接
+        self.connected = True
+        return True
+    
+    def disconnect(self):
+        """断开连接"""
+        logger.info(f"断开 CRM 系统连接：{self.config.system_name}")
+        self.connected = False
+    
+    def get_tasks(self, filters: Dict[str, Any] = None) -> List[TaskItem]:
+        """获取任务列表"""
+        if not self.connected:
+            raise Exception("未连接到系统")
+        
+        # 实际实现需要调用 CRM 系统的 API
+        # 这里返回模拟数据
+        tasks = [
+            TaskItem(
+                task_id=f"{self.config.system_id}_call_001",
+                title="跟进：客户电话",
+                description="需要给重要客户回电话",
+                status='pending',
+                priority='high',
+                source_system=self.config.system_id,
+                assignee='admin',
+                due_date=datetime.now().replace(hour=14, minute=0),
+                metadata={'customer_id': 'C001', 'contact': '王经理'}
+            ),
+            TaskItem(
+                task_id=f"{self.config.system_id}_visit_001",
+                title="安排：客户拜访",
+                description="下周客户拜访计划",
+                status='in_progress',
+                priority='medium',
+                source_system=self.config.system_id,
+                assignee='admin',
+                due_date=datetime.now().replace(day=15, hour=9, minute=0),
+                metadata={'customer_id': 'C002', 'product': '产品A'}
+            )
+        ]
+        
+        # 应用过滤器
+        if filters:
+            if 'status' in filters:
+                tasks = [t for t in tasks if t.status == filters['status']]
+            if 'priority' in filters:
+                tasks = [t for t in tasks if t.priority == filters['priority']]
+        
+        return tasks
+    
+    def create_task(self, task_data: Dict[str, Any]) -> TaskItem:
+        """创建任务"""
+        task = TaskItem(
+            task_id=f"{self.config.system_id}_task_{int(datetime.now().timestamp())}",
+            title=task_data.get('title', '新任务'),
+            description=task_data.get('description', ''),
+            status=task_data.get('status', 'pending'),
+            priority=task_data.get('priority', 'medium'),
+            source_system=self.config.system_id,
+            assignee=task_data.get('assignee', ''),
+            metadata=task_data.get('metadata', {})
+        )
+        logger.info(f"在 CRM 系统创建任务：{task.task_id}")
+        return task
+    
+    def update_task(self, task_id: str, updates: Dict[str, Any]) -> TaskItem:
+        """更新任务"""
+        # 实际实现需要调用 CRM 系统的 API
+        # 这里返回模拟数据
+        task = TaskItem(
+            task_id=task_id,
+            title=updates.get('title', '任务标题'),
+            description=updates.get('description', ''),
+            status=updates.get('status', 'pending'),
+            priority=updates.get('priority', 'medium'),
+            source_system=self.config.system_id,
+            assignee=updates.get('assignee', ''),
+            metadata=updates.get('metadata', {})
+        )
+        logger.info(f"在 CRM 系统更新任务：{task_id}")
+        return task
+    
+    def delete_task(self, task_id: str) -> bool:
+        """删除任务"""
+        logger.info(f"在 CRM 系统删除任务：{task_id}")
+        return True
+    
+    def get_user_info(self, user_id: str) -> Dict[str, Any]:
+        """获取用户信息"""
+        return {
+            'user_id': user_id,
+            'username': user_id,
+            'display_name': f'CRM 用户 {user_id}',
+            'email': f'{user_id}@crm.example.com',
+            'department': '销售部',
+            'role': 'sales'
+        }
+
+
+# 注册系统适配器
+AdapterFactory.register_adapter(SystemType.OA, OASystemAdapter)
+AdapterFactory.register_adapter(SystemType.ERP, ERPSystemAdapter)
+AdapterFactory.register_adapter(SystemType.CRM, CRMSystemAdapter)
+
+
 class SystemIntegrationService:
     """系统集成服务"""
     

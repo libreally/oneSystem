@@ -9,14 +9,20 @@ from .scheduler_routes import scheduler_bp
 from .file_retrieval_routes import file_retrieval_bp
 from .user_profile_routes import user_profile_bp
 from .integration_routes import integration_bp
+from .wps_routes import wps_bp
+from .skill_generator_routes import skill_generator_bp
+from .permission_routes import permission_bp
 
 __all__ = [
-    'api_bp', 
-    'skill_bp', 
-    'task_bp', 
-    'config_bp', 
-    'scheduler_bp', 
-    'file_retrieval_bp', 
+    'api_bp',
+    'skill_bp',
+    'task_bp',
+    'config_bp',
+    'scheduler_bp',
+    'file_retrieval_bp',
     'user_profile_bp',
-    'integration_bp'
+    'integration_bp',
+    'wps_bp',
+    'skill_generator_bp',
+    'permission_bp'
 ]
