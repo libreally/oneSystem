@@ -326,8 +326,22 @@ const formatRepeatType = (task) => {
 
 const formatDateTime = (dateString) => {
   if (!dateString) return '-';
-  const date = new Date(dateString);
-  return date.toLocaleString('zh-CN');
+  // 检查是否是字符串
+  if (typeof dateString === 'string') {
+    // 检查是否已经是 yyyy-MM-dd hh:mm:ss 格式
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateString)) {
+      return dateString;
+    }
+    // 尝试解析其他格式的时间字符串
+    const date = new Date(dateString);
+    // 检查是否是有效日期
+    if (!isNaN(date.getTime())) {
+      // 转换为 yyyy-MM-dd hh:mm:ss 格式
+      return date.toISOString().slice(0, 10) + ' ' + date.toISOString().slice(11, 19);
+    }
+  }
+  // 其他情况，直接返回
+  return dateString;
 };
 
 const formatResult = (result, error) => {

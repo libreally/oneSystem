@@ -420,6 +420,13 @@ class SchedulerService:
         if task_id:
             history = [h for h in history if h['task_id'] == task_id]
         
+        # 格式化时间为统一格式
+        for record in history:
+            if isinstance(record.get('start_time'), datetime):
+                record['start_time'] = record['start_time'].strftime('%Y-%m-%d %H:%M:%S')
+            if isinstance(record.get('end_time'), datetime):
+                record['end_time'] = record['end_time'].strftime('%Y-%m-%d %H:%M:%S')
+        
         history.sort(key=lambda x: x['start_time'], reverse=True)
         return history[:limit]
     
