@@ -161,11 +161,13 @@ const currentChatStatus = computed(() => {
 
 const sendMessage = async () => {
   if (!inputMessage.value.trim()) return
+  const message = inputMessage.value
+  inputMessage.value = ''
   try {
-    await chatStore.sendMessage(inputMessage.value)
-    inputMessage.value = ''
+    await chatStore.sendMessage(message)
   } catch (error) {
     console.error('Send message failed:', error)
+    inputMessage.value = message
   }
 }
 
