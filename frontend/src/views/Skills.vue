@@ -97,6 +97,7 @@
                 <option value="文档处理">文档处理</option>
                 <option value="敏感词检查">敏感词检查</option>
                 <option value="数据合并">数据合并</option>
+                <option value="定时管理">定时管理</option>
                 <option value="其他">其他</option>
               </select>
             </div>
@@ -171,6 +172,7 @@
                 <option value="文档处理">文档处理</option>
                 <option value="敏感词检查">敏感词检查</option>
                 <option value="数据合并">数据合并</option>
+                <option value="定时管理">定时管理</option>
                 <option value="其他">其他</option>
               </select>
             </div>
@@ -349,6 +351,7 @@ const getSkillIcon = (skill) => {
     '文档处理': '📝',
     '敏感词检查': '🔍',
     '数据合并': '📊',
+    '定时管理': '⏰',
     '其他': '🛠️'
   };
   return categoryIcons[skill.category] || '🛠️';

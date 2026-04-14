@@ -9,6 +9,7 @@ from backend.skills.base_skill import BaseSkill
 from backend.skills.document_skill import DocumentSkill
 from backend.skills.sensitive_word_skill import SensitiveWordSkill
 from backend.skills.data_merge_skill import DataMergeSkill
+from backend.skills.scheduler_skill import SchedulerSkill
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ class SkillEngine:
         self.register_skill(DocumentSkill())
         self.register_skill(SensitiveWordSkill())
         self.register_skill(DataMergeSkill())
+        self.register_skill(SchedulerSkill())
         logger.info(f"已注册 {len(self.skills)} 个内置 Skills")
     
     def register_skill(self, skill: BaseSkill):

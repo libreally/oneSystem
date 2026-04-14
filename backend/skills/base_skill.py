@@ -17,6 +17,7 @@ class BaseSkill(ABC):
         self.skill_id = skill_id
         self.name = name
         self.description = description
+        self.version = "1.0.0"
         self.created_at = datetime.now()
     
     @abstractmethod
@@ -55,9 +56,24 @@ class BaseSkill(ABC):
             'skill_id': self.skill_id,
             'name': self.name,
             'description': self.description,
+            'version': self.version,
             'created_at': self.created_at.isoformat()
         }
     
     def log_execution(self, action: str, details: str):
         """记录执行日志"""
         logger.info(f"[{self.name}] {action}: {details}")
+    
+    def update_info(self, info: Dict[str, Any]):
+        """
+        更新技能信息
+        
+        Args:
+            info: 包含要更新的信息的字典
+        """
+        if 'name' in info:
+            self.name = info['name']
+        if 'description' in info:
+            self.description = info['description']
+        if 'version' in info:
+            self.version = info['version']

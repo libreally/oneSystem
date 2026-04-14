@@ -5,10 +5,12 @@ from .base_skill import BaseSkill
 from .document_skill import DocumentSkill
 from .sensitive_word_skill import SensitiveWordSkill
 from .data_merge_skill import DataMergeSkill
+from .scheduler_skill import SchedulerSkill
 
 __all__ = [
     'BaseSkill',
     'DocumentSkill',
     'SensitiveWordSkill',
-    'DataMergeSkill'
+    'DataMergeSkill',
+    'SchedulerSkill'
 ]

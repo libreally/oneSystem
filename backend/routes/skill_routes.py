@@ -3,7 +3,7 @@ Skills 管理路由
 支持动态技能生成和注册
 """
 from flask import Blueprint, jsonify, request
-from backend.skills import DocumentSkill, SensitiveWordSkill, DataMergeSkill
+from backend.skills import DocumentSkill, SensitiveWordSkill, DataMergeSkill, SchedulerSkill
 from backend.services.llm_service import get_llm_service, init_llm_service
 import logging
 import importlib.util
@@ -18,7 +18,8 @@ skill_bp = Blueprint('skills', __name__, url_prefix='/api/skills')
 available_skills = {
     'doc_processor': DocumentSkill(),
     'sensitive_word_checker': SensitiveWordSkill(),
-    'data_merger': DataMergeSkill()
+    'data_merger': DataMergeSkill(),
+    'scheduler': SchedulerSkill()
 }
 
 # 动态生成的技能存储
@@ -227,45 +228,66 @@ def register_skill():
 
 @skill_bp.route('/<skill_id>', methods=['PUT'])
 def update_skill(skill_id):
-    """更新动态技能"""
-    if skill_id in available_skills:
-        return jsonify({
-            'success': False,
-            'message': '不能更新内置技能'
-        }), 400
+    """更新技能（支持内置技能和动态技能）"""
+    data = request.get_json()
     
-    if skill_id not in dynamic_skills:
+    if skill_id in available_skills:
+        # 更新内置技能的信息
+        skill = available_skills[skill_id]
+        info = skill.get_info()
+        
+        # 更新技能信息
+        if hasattr(skill, 'update_info'):
+            skill.update_info({
+                'name': data.get('name', info.get('name')),
+                'description': data.get('description', info.get('description')),
+                'version': data.get('version', info.get('version'))
+            })
+        
+        # 重新获取更新后的信息
+        updated_info = skill.get_info()
+        updated_info['category'] = get_skill_category(skill_id)
+        updated_info['is_dynamic'] = False
+        
+        logger.info(f"成功更新内置技能：{skill_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'内置技能 {skill_id} 更新成功',
+            'data': updated_info
+        })
+    elif skill_id in dynamic_skills:
+        # 更新动态技能
+        skill_name = data.get('name', dynamic_skills[skill_id].get('name'))
+        description = data.get('description', dynamic_skills[skill_id].get('description'))
+        category = data.get('category', dynamic_skills[skill_id].get('category'))
+        version = data.get('version', dynamic_skills[skill_id].get('version'))
+        code = data.get('code', dynamic_skills[skill_id].get('code'))
+        parameters = data.get('parameters', dynamic_skills[skill_id].get('parameters', []))
+        
+        # 更新动态技能
+        dynamic_skills[skill_id].update({
+            'name': skill_name,
+            'description': description,
+            'category': category,
+            'version': version,
+            'code': code,
+            'parameters': parameters,
+            'updated_at': __import__('datetime').datetime.now().isoformat()
+        })
+        
+        logger.info(f"成功更新动态技能：{skill_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'动态技能 {skill_id} 更新成功',
+            'data': dynamic_skills[skill_id]
+        })
+    else:
         return jsonify({
             'success': False,
             'message': f'Skill 不存在：{skill_id}'
         }), 404
-    
-    data = request.get_json()
-    skill_name = data.get('name', dynamic_skills[skill_id].get('name'))
-    description = data.get('description', dynamic_skills[skill_id].get('description'))
-    category = data.get('category', dynamic_skills[skill_id].get('category'))
-    version = data.get('version', dynamic_skills[skill_id].get('version'))
-    code = data.get('code', dynamic_skills[skill_id].get('code'))
-    parameters = data.get('parameters', dynamic_skills[skill_id].get('parameters', []))
-    
-    # 更新动态技能
-    dynamic_skills[skill_id].update({
-        'name': skill_name,
-        'description': description,
-        'category': category,
-        'version': version,
-        'code': code,
-        'parameters': parameters,
-        'updated_at': __import__('datetime').datetime.now().isoformat()
-    })
-    
-    logger.info(f"成功更新技能：{skill_id}")
-    
-    return jsonify({
-        'success': True,
-        'message': f'Skill {skill_id} 更新成功',
-        'data': dynamic_skills[skill_id]
-    })
 
 
 @skill_bp.route('/<skill_id>', methods=['DELETE'])
@@ -332,6 +354,7 @@ def get_skill_category(skill_id: str) -> str:
     categories = {
         'doc_processor': '文档处理',
         'sensitive_word_checker': '敏感词检查',
-        'data_merger': '数据合并'
+        'data_merger': '数据合并',
+        'scheduler': '定时管理'
     }
     return categories.get(skill_id, '其他')

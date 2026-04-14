@@ -213,6 +213,12 @@ def get_recommendations():
             'description': '合并多个 Excel/CSV 文件，比对数据差异',
             'type': 'data',
             'priority': 'medium'
+        },
+         'scheduler_manager': {
+            'title': '定时任务管理',
+            'description': '支持创建、查看、修改和删除定时任务，设置执行时间和重复规则',
+            'type': 'scheduler',
+            'priority': 'medium'
         }
     }
     
