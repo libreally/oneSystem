@@ -64,11 +64,15 @@ class DocumentSkill(BaseSkill):
         from docx import Document
         from docx.shared import Pt, Cm
         from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from backend.services.config_service import config_service
         
         content = params.get('content', '')
         file_path = params.get('file_path')
         doc_type = params.get('doc_type', '通知')
         output_path = params.get('output_path', 'output.docx')
+        
+        # 从配置中心加载公文模板配置
+        template_config = config_service.get_config('document_template', 'standard')
         
         # 如果提供了文件路径，读取文件内容
         if file_path and os.path.exists(file_path):
@@ -83,13 +87,30 @@ class DocumentSkill(BaseSkill):
         title_para = doc.add_heading(title, level=1)
         title_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
         
+        # 应用配置中的格式
+        if template_config:
+            # 设置字体和字号
+            if 'font' in template_config and 'font_size' in template_config:
+                for paragraph in doc.paragraphs:
+                    for run in paragraph.runs:
+                        run.font.name = template_config['font']
+                        run.font.size = Pt(template_config['font_size'])
+        
         # 添加正文
         if content:
             for paragraph in content.split('\n'):
                 if paragraph.strip():
                     p = doc.add_paragraph(paragraph)
-                    p.paragraph_format.line_spacing = Cm(0.75)
-                    p.paragraph_format.first_line_indent = Cm(0.74)
+                    # 应用配置中的行间距和首行缩进
+                    if template_config:
+                        if 'line_spacing' in template_config:
+                            p.paragraph_format.line_spacing = template_config['line_spacing']
+                        if 'margin' in template_config and 'left' in template_config['margin']:
+                            p.paragraph_format.first_line_indent = Cm(template_config['margin']['left'] * 0.29)
+                    else:
+                        # 默认值
+                        p.paragraph_format.line_spacing = Cm(0.75)
+                        p.paragraph_format.first_line_indent = Cm(0.74)
         
         # 保存文档
         doc.save(output_path)
@@ -102,7 +123,8 @@ class DocumentSkill(BaseSkill):
             'file_path': os.path.abspath(output_path),
             'data': {
                 'doc_type': doc_type,
-                'output_path': output_path
+                'output_path': output_path,
+                'template_used': template_config is not None
             }
         }
     

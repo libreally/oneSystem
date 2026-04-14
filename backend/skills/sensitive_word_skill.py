@@ -24,6 +24,9 @@ class SensitiveWordSkill(BaseSkill):
     
     def _load_sensitive_words(self) -> Dict[str, List[str]]:
         """加载敏感词库"""
+        # 从配置中心加载
+        from backend.services.config_service import config_service
+        
         # 默认敏感词示例
         words = {
             'high': ['敏感词 1', '敏感词 2'],
@@ -31,7 +34,21 @@ class SensitiveWordSkill(BaseSkill):
             'low': ['提示词 1']
         }
         
-        # 从文件加载
+        # 从配置中心加载敏感词库
+        config = config_service.get_config('sensitive_word', 'default')
+        if config and 'words' in config:
+            try:
+                # 处理配置中的敏感词
+                if isinstance(config['words'], list):
+                    # 兼容旧格式
+                    words['high'] = config['words']
+                elif isinstance(config['words'], dict):
+                    # 新格式，按级别分类
+                    words = config['words']
+            except Exception as e:
+                logger.error(f"加载配置中心敏感词库失败：{e}")
+        
+        # 从文件加载（作为备用）
         word_file = 'data/sensitive_words/words.txt'
         if os.path.exists(word_file):
             try:

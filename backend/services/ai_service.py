@@ -193,6 +193,10 @@ class AIAssistantService:
         """
         logger.info(f"收到用户消息：{message}, 用户：{user_id}")
         
+        # 从配置中心加载用户偏好配置
+        from backend.services.config_service import config_service
+        user_preference = config_service.get_config('user_preference', 'default', user_id)
+        
         # 分析意图
         intent_result = self.analyze_intent(message)
         
@@ -213,10 +217,20 @@ class AIAssistantService:
             
             if llm_service and llm_service.enabled:
                 # 构建消息列表
+                system_prompt = "你是一系统 AI 助手，一个专业的办公自动化助手，擅长处理文档、数据和任务管理。请根据用户的需求，提供专业、准确的回答。"
+                
+                # 应用用户偏好配置
+                if user_preference and 'preferences' in user_preference:
+                    preferences = user_preference['preferences']
+                    if 'response_language' in preferences:
+                        system_prompt += f"\n请使用{preferences['response_language']}回答。"
+                    if 'response_style' in preferences:
+                        system_prompt += f"\n回答风格：{preferences['response_style']}。"
+                
                 messages = [
                     {
                         "role": "system",
-                        "content": "你是一系统 AI 助手，一个专业的办公自动化助手，擅长处理文档、数据和任务管理。请根据用户的需求，提供专业、准确的回答。"
+                        "content": system_prompt
                     },
                     {
                         "role": "user",
@@ -240,15 +254,24 @@ class AIAssistantService:
         
         # 如果没有匹配的 Skill 或 LLM 服务不可用，返回通用回复
         if not intent_result['skill_id']:
+            # 应用用户偏好配置
+            default_message = '抱歉，我暂时无法理解您的需求。您可以尝试：\n- 帮我转换公文\n- 检查敏感词\n- 合并 Excel 表格'
+            default_suggestions = [
+                '把这个文件转成标准公文',
+                '检查这篇材料的敏感词',
+                '合并这两个表'
+            ]
+            
+            if user_preference and 'preferences' in user_preference:
+                preferences = user_preference['preferences']
+                if 'default_suggestions' in preferences:
+                    default_suggestions = preferences['default_suggestions']
+            
             return {
                 'success': True,
                 'need_more_info': False,
-                'message': '抱歉，我暂时无法理解您的需求。您可以尝试：\n- 帮我转换公文\n- 检查敏感词\n- 合并 Excel 表格',
-                'suggestions': [
-                    '把这个文件转成标准公文',
-                    '检查这篇材料的敏感词',
-                    '合并这两个表'
-                ]
+                'message': default_message,
+                'suggestions': default_suggestions
             }
         
         # 执行 Skill
