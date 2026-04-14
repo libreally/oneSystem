@@ -17,11 +17,15 @@ class ConfigService:
     
     def __init__(self):
         """初始化配置服务"""
+        logger.info("开始初始化配置服务")
         self.config_base_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'configs')
+        logger.info(f"配置基础目录：{self.config_base_dir}")
         self._ensure_config_dirs()
+        logger.info("配置服务初始化完成")
         
     def _ensure_config_dirs(self):
         """确保配置目录存在"""
+        logger.info("开始确保配置目录存在")
         dirs = [
             os.path.join(self.config_base_dir, 'public'),
             os.path.join(self.config_base_dir, 'personal')
@@ -29,6 +33,8 @@ class ConfigService:
         
         for dir_path in dirs:
             os.makedirs(dir_path, exist_ok=True)
+            logger.info(f"确保目录存在：{dir_path}")
+        logger.info("配置目录检查完成")
     
     def get_config(self, config_type: str, config_name: str, user_id: str = None) -> Optional[Dict[str, Any]]:
         """
@@ -42,15 +48,22 @@ class ConfigService:
         Returns:
             配置内容或 None
         """
+        logger.info(f"开始获取配置，类型：{config_type}，名称：{config_name}，用户：{user_id}")
+        
         # 优先查找个人配置
         if user_id:
+            # 确保 user_id 是字符串类型
+            user_id_str = str(user_id)
             personal_config_path = os.path.join(
-                self.config_base_dir, 'personal', user_id, f'{config_type}', f'{config_name}.json'
+                self.config_base_dir, 'personal', user_id_str, f'{config_type}', f'{config_name}.json'
             )
+            logger.info(f"尝试读取个人配置：{personal_config_path}")
             if os.path.exists(personal_config_path):
                 try:
                     with open(personal_config_path, 'r', encoding='utf-8') as f:
-                        return json.load(f)
+                        config = json.load(f)
+                        logger.info(f"成功读取个人配置")
+                        return config
                 except Exception as e:
                     logger.error(f"读取个人配置失败: {str(e)}")
         
@@ -58,18 +71,24 @@ class ConfigService:
         public_config_path = os.path.join(
             self.config_base_dir, 'public', f'{config_type}', f'{config_name}.json'
         )
+        logger.info(f"尝试读取公共配置：{public_config_path}")
         if os.path.exists(public_config_path):
             try:
                 with open(public_config_path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+                    config = json.load(f)
+                    logger.info(f"成功读取公共配置")
+                    return config
             except Exception as e:
                 logger.error(f"读取公共配置失败: {str(e)}")
         
         # 查找默认配置
+        logger.info("尝试获取默认配置")
         default_config = self._get_default_config(config_type, config_name)
         if default_config:
+            logger.info(f"成功获取默认配置")
             return default_config
         
+        logger.warning(f"配置未找到：{config_type}/{config_name}")
         return None
     
     def save_config(self, config_type: str, config_name: str, config_data: Dict[str, Any], user_id: str = None) -> bool:
@@ -85,17 +104,25 @@ class ConfigService:
         Returns:
             是否成功
         """
+        logger.info(f"开始保存配置，类型：{config_type}，名称：{config_name}，用户：{user_id}")
+        
         try:
             if user_id:
+                # 确保 user_id 是字符串类型
+                user_id_str = str(user_id)
                 # 保存个人配置
-                config_dir = os.path.join(self.config_base_dir, 'personal', user_id, f'{config_type}')
+                config_dir = os.path.join(self.config_base_dir, 'personal', user_id_str, f'{config_type}')
+                logger.info(f"保存为个人配置到：{config_dir}")
             else:
                 # 保存公共配置
                 config_dir = os.path.join(self.config_base_dir, 'public', f'{config_type}')
+                logger.info(f"保存为公共配置到：{config_dir}")
             
             os.makedirs(config_dir, exist_ok=True)
+            logger.info(f"确保配置目录存在：{config_dir}")
             
             config_path = os.path.join(config_dir, f'{config_name}.json')
+            logger.info(f"配置文件路径：{config_path}")
             
             # 添加元数据
             config_data['_metadata'] = {
@@ -105,6 +132,7 @@ class ConfigService:
                 'config_name': config_name,
                 'user_id': user_id
             }
+            logger.info("添加配置元数据")
             
             with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump(config_data, f, ensure_ascii=False, indent=2)
@@ -130,9 +158,11 @@ class ConfigService:
         """
         try:
             if user_id:
+                # 确保 user_id 是字符串类型
+                user_id_str = str(user_id)
                 # 删除个人配置
                 config_path = os.path.join(
-                    self.config_base_dir, 'personal', user_id, f'{config_type}', f'{config_name}.json'
+                    self.config_base_dir, 'personal', user_id_str, f'{config_type}', f'{config_name}.json'
                 )
             else:
                 # 删除公共配置
@@ -188,7 +218,9 @@ class ConfigService:
         
         # 列出个人配置
         if user_id:
-            personal_dir = os.path.join(self.config_base_dir, 'personal', user_id)
+            # 确保 user_id 是字符串类型
+            user_id_str = str(user_id)
+            personal_dir = os.path.join(self.config_base_dir, 'personal', user_id_str)
             if config_type:
                 personal_dir = os.path.join(personal_dir, config_type)
             

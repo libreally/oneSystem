@@ -56,8 +56,13 @@ class LLMService:
         Returns:
             生成的技能代码和元数据
         """
+        logger.info(f"开始生成技能代码，描述：{description[:100]}...")
+        
         if not self.enabled:
-            return self._generate_mock_skill(description, params)
+            logger.info("LLM 服务未启用，使用模拟技能生成")
+            result = self._generate_mock_skill(description, params)
+            logger.info(f"模拟技能生成完成：{result.get('name', 'unknown')}")
+            return result
         
         system_prompt = """你是一个专业的 Python 开发者，专门为一系统 AI 助手创建 Skills。
 Skills 需要继承 BaseSkill 类，并实现以下方法：
@@ -89,6 +94,7 @@ Skills 需要继承 BaseSkill 类，并实现以下方法：
 }}"""
 
         try:
+            logger.info("调用 LLM 生成技能代码")
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -100,29 +106,35 @@ Skills 需要继承 BaseSkill 类，并实现以下方法：
             )
             
             content = response.choices[0].message.content.strip()
+            logger.info("LLM 响应获取成功")
             
             # 尝试解析 JSON
             if content.startswith('```json'):
                 content = content[7:-3].strip()
+                logger.info("解析 JSON 格式响应")
             elif content.startswith('```'):
                 content = content[3:-3].strip()
+                logger.info("解析代码块格式响应")
             
             skill_definition = json.loads(content)
-            
             logger.info(f"成功生成技能：{skill_definition.get('name', 'unknown')}")
             
-            return {
+            result = {
                 'success': True,
                 'skill_definition': skill_definition,
                 'raw_response': content
             }
+            logger.info("技能代码生成完成")
+            return result
             
         except Exception as e:
             logger.error(f"生成技能代码失败：{str(e)}")
+            fallback_result = self._generate_mock_skill(description, params)
+            logger.info(f"使用模拟技能作为 fallback：{fallback_result.get('name', 'unknown')}")
             return {
                 'success': False,
                 'error': str(e),
-                'fallback': self._generate_mock_skill(description, params)
+                'fallback': fallback_result
             }
     
     def enhance_intent_recognition(self, message: str, context: List[Dict] = None) -> Dict[str, Any]:
@@ -136,8 +148,13 @@ Skills 需要继承 BaseSkill 类，并实现以下方法：
         Returns:
             增强的意图识别结果
         """
+        logger.info(f"开始增强意图识别，消息：{message[:100]}...")
+        
         if not self.enabled:
-            return self._mock_intent_recognition(message)
+            logger.info("LLM 服务未启用，使用模拟意图识别")
+            result = self._mock_intent_recognition(message)
+            logger.info(f"模拟意图识别结果：{result.get('intent', 'unknown')}")
+            return result
         
         system_prompt = """你是一个智能意图识别助手。请分析用户消息，识别其意图。
 支持的意图类型：
@@ -163,10 +180,12 @@ Skills 需要继承 BaseSkill 类，并实现以下方法：
             context_str = "对话上下文:\n" + "\n".join([
                 f"{msg['role']}: {msg['content']}" for msg in context[-5:]
             ]) + "\n\n"
+            logger.info(f"使用对话上下文，共 {len(context)} 条消息")
         
         user_prompt = f"{context_str}用户消息：{message}"
         
         try:
+            logger.info("调用 LLM 增强意图识别")
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -178,27 +197,35 @@ Skills 需要继承 BaseSkill 类，并实现以下方法：
             )
             
             content = response.choices[0].message.content.strip()
+            logger.info("LLM 响应获取成功")
             
             # 解析 JSON
             if content.startswith('```json'):
                 content = content[7:-3].strip()
+                logger.info("解析 JSON 格式响应")
             elif content.startswith('```'):
                 content = content[3:-3].strip()
+                logger.info("解析代码块格式响应")
             
             intent_result = json.loads(content)
+            logger.info(f"增强意图识别结果：{intent_result.get('intent', 'unknown')}")
             
-            return {
+            result = {
                 'success': True,
                 'intent_result': intent_result,
                 'enhanced': True
             }
+            logger.info("意图识别增强完成")
+            return result
             
         except Exception as e:
             logger.error(f"意图识别增强失败：{str(e)}")
+            fallback_result = self._mock_intent_recognition(message)
+            logger.info(f"使用模拟意图识别作为 fallback：{fallback_result.get('intent', 'unknown')}")
             return {
                 'success': False,
                 'error': str(e),
-                'fallback': self._mock_intent_recognition(message)
+                'fallback': fallback_result
             }
     
     def generate_code_explanation(self, code: str) -> str:
@@ -323,7 +350,10 @@ class {skill_name.title().replace('_', '')}(BaseSkill):
         Returns:
             响应结果
         """
+        logger.info(f"开始聊天补全，消息数量：{len(messages)}")
+        
         if not self.enabled:
+            logger.info("LLM 服务未启用，返回默认响应")
             return {
                 'success': False,
                 'error': 'LLM 服务未启用',
@@ -331,8 +361,9 @@ class {skill_name.title().replace('_', '')}(BaseSkill):
             }
         
         try:
-            # 设置默认超时时间为30秒
-            timeout = kwargs.pop('timeout', 30)
+            # 设置默认超时时间为300秒
+            timeout = kwargs.pop('timeout', 300)
+            logger.info(f"调用 LLM 模型：{self.model}，超时设置：{timeout}秒")
             
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -341,19 +372,23 @@ class {skill_name.title().replace('_', '')}(BaseSkill):
                 **kwargs
             )
             
-            return {
+            result = {
                 'success': True,
                 'response': response.choices[0].message.content,
                 'usage': response.usage.model_dump() if hasattr(response.usage, 'model_dump') else vars(response.usage)
             }
+            logger.info(f"聊天补全成功，响应长度：{len(result['response'])} 字符")
+            return result
             
         except Exception as e:
             logger.error(f"聊天补全失败：{str(e)}")
-            return {
+            error_response = {
                 'success': False,
                 'error': str(e),
                 'response': '抱歉，处理您的请求时遇到错误。'
             }
+            logger.info(f"返回错误响应：{error_response}")
+            return error_response
 
 
 # 全局 LLM 服务实例

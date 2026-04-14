@@ -78,7 +78,8 @@
             {{ message.role === 'user' ? '张' : '🤖' }}
           </div>
           <div class="message-wrapper">
-            <div class="message-content">{{ message.content }}</div>
+            <div class="message-content" v-if="message.role === 'assistant'" v-html="renderMarkdown(message.content)"></div>
+            <div class="message-content" v-else>{{ message.content }}</div>
             <div class="message-footer">
               <span class="message-time">{{ formatTime(message.timestamp) }}</span>
               <span v-if="message.role === 'user'" class="message-status delivered">已送达</span>
@@ -114,8 +115,10 @@
 import { ref, nextTick, watch, computed, onMounted } from 'vue'
 import { useChatStore } from '../stores/chat'
 import { formatDate } from '@/utils/helpers'
+import MarkdownIt from 'markdown-it'
 
 const chatStore = useChatStore()
+const md = new MarkdownIt({ html: true, breaks: true, linkify: true })
 const inputMessage = ref('')
 const chatBodyRef = ref(null)
 const isContactPanelOpen = ref(false)
@@ -232,6 +235,14 @@ const clearHistory = () => {
   if (confirm('确定要清空当前会话历史吗？')) {
     chatStore.clearMessages()
   }
+}
+
+const addTestMessage = () => {
+  chatStore.addTestMessage()
+}
+
+const renderMarkdown = (content) => {
+  return md.render(content)
 }
 
 watch(() => chatStore.messages.length, () => {
@@ -447,6 +458,91 @@ watch(() => chatStore.messages.length, () => {
   border-top-left-radius: 4px;
   border-bottom-left-radius: 18px;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Markdown 样式 */
+.message-content h1, .message-content h2, .message-content h3, .message-content h4, .message-content h5, .message-content h6 {
+  margin: 10px 0 5px 0;
+  font-weight: 600;
+}
+
+.message-content h1 {
+  font-size: 18px;
+}
+
+.message-content h2 {
+  font-size: 16px;
+}
+
+.message-content h3 {
+  font-size: 14px;
+}
+
+.message-content p {
+  margin: 5px 0;
+}
+
+.message-content ul, .message-content ol {
+  margin: 5px 0;
+  padding-left: 20px;
+}
+
+.message-content li {
+  margin: 2px 0;
+}
+
+.message-content code {
+  background: #f5f5f5;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.message-content pre {
+  background: #f5f5f5;
+  padding: 10px;
+  border-radius: 5px;
+  overflow-x: auto;
+  margin: 5px 0;
+}
+
+.message-content pre code {
+  background: none;
+  padding: 0;
+}
+
+.message-content blockquote {
+  border-left: 3px solid rgb(0, 101, 105);
+  padding-left: 10px;
+  margin: 5px 0;
+  color: #666;
+}
+
+.message-content table {
+  border-collapse: collapse;
+  margin: 5px 0;
+  width: 100%;
+}
+
+.message-content th, .message-content td {
+  border: 1px solid #ddd;
+  padding: 5px;
+  text-align: left;
+}
+
+.message-content th {
+  background: #f5f5f5;
+  font-weight: 600;
+}
+
+.message-content a {
+  color: rgb(0, 101, 105);
+  text-decoration: none;
+}
+
+.message-content a:hover {
+  text-decoration: underline;
 }
 
 .message-footer {
