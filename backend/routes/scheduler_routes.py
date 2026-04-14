@@ -1,10 +1,12 @@
 """
 定时任务 API 路由
 """
+import logging
 from flask import Blueprint, jsonify, request
 from datetime import datetime
 from backend.services.scheduler_service import scheduler_service, ScheduledTask, RepeatType
 
+logger = logging.getLogger(__name__)
 scheduler_bp = Blueprint('scheduler', __name__, url_prefix='/api/scheduler')
 
 
@@ -142,6 +144,37 @@ def get_task_history(task_id):
             'total': len(history)
         }
     })
+
+
+@scheduler_bp.route('/tasks/<task_id>/execute', methods=['POST'])
+def execute_task(task_id):
+    """手动执行任务"""
+    logger.info(f"开始执行任务：{task_id}")
+    task = scheduler_service.get_task(task_id)
+    
+    if not task:
+        logger.warning(f"任务不存在：{task_id}")
+        return jsonify({
+            'success': False,
+            'message': '任务不存在'
+        }), 404
+    
+    try:
+        # 直接调用执行方法
+        logger.info(f"执行任务：{task.name} ({task.task_id})")
+        scheduler_service._execute_task(task)
+        
+        logger.info(f"任务执行成功：{task_id}")
+        return jsonify({
+            'success': True,
+            'message': '任务执行成功'
+        })
+    except Exception as e:
+        logger.error(f"任务执行失败：{task_id}, 错误：{str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'任务执行失败：{str(e)}'
+        }), 500
 
 
 @scheduler_bp.route('/history', methods=['GET'])

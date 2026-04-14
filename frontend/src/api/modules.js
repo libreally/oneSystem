@@ -71,43 +71,63 @@ export const skillApi = {
 
 export const scheduleApi = {
   // Get all scheduled tasks
-  getAll() {
-    return apiClient.get('/schedule');
+  getAll(user_id = null, enabled_only = false) {
+    return apiClient.get('/scheduler/tasks', { params: { user_id, enabled_only } });
   },
 
   // Get task by ID
   getById(taskId) {
-    return apiClient.get(`/schedule/${taskId}`);
+    return apiClient.get(`/scheduler/tasks/${taskId}`);
   },
 
   // Create task
   create(taskData) {
-    return apiClient.post('/schedule', taskData);
-  },
-
-  // Update task
-  update(taskId, taskData) {
-    return apiClient.put(`/schedule/${taskId}`, taskData);
+    return apiClient.post('/scheduler/tasks', taskData);
   },
 
   // Delete task
-  delete(taskId) {
-    return apiClient.delete(`/schedule/${taskId}`);
+  deleteTask(taskId) {
+    return apiClient.delete(`/scheduler/tasks/${taskId}`);
   },
 
   // Enable task
   enable(taskId) {
-    return apiClient.post(`/schedule/${taskId}/enable`);
+    return apiClient.post(`/scheduler/tasks/${taskId}/enable`);
   },
 
   // Disable task
   disable(taskId) {
-    return apiClient.post(`/schedule/${taskId}/disable`);
+    return apiClient.post(`/scheduler/tasks/${taskId}/disable`);
   },
 
-  // Run task immediately
-  runNow(taskId) {
-    return apiClient.post(`/schedule/${taskId}/run`);
+  // Get task execution history
+  getHistory(taskId, limit = 50) {
+    return apiClient.get(`/scheduler/tasks/${taskId}/history`, { params: { limit } });
+  },
+
+  // Get all execution history
+  getAllHistory(task_id = null, limit = 50) {
+    return apiClient.get('/scheduler/history', { params: { task_id, limit } });
+  },
+
+  // Create daily report task
+  createDailyReport(taskData) {
+    return apiClient.post('/scheduler/tasks/daily-report', taskData);
+  },
+
+  // Create reminder task
+  createReminder(taskData) {
+    return apiClient.post('/scheduler/tasks/reminder', taskData);
+  },
+
+  // Get scheduler status
+  getStatus() {
+    return apiClient.get('/scheduler/status');
+  },
+
+  // Execute task manually
+  execute(taskId) {
+    return apiClient.post(`/scheduler/tasks/${taskId}/execute`);
   }
 };
 

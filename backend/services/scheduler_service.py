@@ -1,5 +1,4 @@
-"""
-定时调度中心服务
+"""定时调度中心服务
 支持定时任务、周期执行、自动报告、主动提醒等功能
 """
 import os
@@ -11,6 +10,8 @@ from typing import Dict, Any, List, Optional, Callable
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 from enum import Enum
+
+from backend.services.llm_service import get_llm_service
 
 logger = logging.getLogger(__name__)
 
@@ -191,29 +192,28 @@ class SchedulerService:
         def job():
             self._execute_task(task)
         
-        with self._lock:
-            if task.repeat_type == RepeatType.HOURLY:
-                schedule.every(task.interval_minutes or 60).minutes.do(job)
-            elif task.repeat_type == RepeatType.DAILY:
-                schedule.every().day.at(f"{task.hour:02d}:{task.minute:02d}").do(job)
-            elif task.repeat_type == RepeatType.WEEKLY:
-                weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-                schedule.every(getattr(schedule, weekdays[task.day_of_week])).at(
-                    f"{task.hour:02d}:{task.minute:02d}"
-                ).do(job)
-            elif task.repeat_type == RepeatType.MONTHLY:
-                # 简化：每 30 天执行一次
-                schedule.every(30).days.at(f"{task.hour:02d}:{task.minute:02d}").do(job)
-            elif task.repeat_type == RepeatType.CUSTOM:
-                interval = task.interval_minutes or 60
-                schedule.every(interval).minutes.do(job)
-            else:  # ONCE
-                if task.execute_at:
-                    delay = (task.execute_at - datetime.now()).total_seconds()
-                    if delay > 0:
-                        schedule.every(int(delay)).seconds.do(job).tag(f"once_{task.task_id}")
-                else:
-                    schedule.every(1).minutes.do(job).tag(f"once_{task.task_id}")
+        if task.repeat_type == RepeatType.HOURLY:
+            schedule.every(task.interval_minutes or 60).minutes.do(job)
+        elif task.repeat_type == RepeatType.DAILY:
+            schedule.every().day.at(f"{task.hour:02d}:{task.minute:02d}").do(job)
+        elif task.repeat_type == RepeatType.WEEKLY:
+            weekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+            schedule.every(getattr(schedule, weekdays[task.day_of_week])).at(
+                f"{task.hour:02d}:{task.minute:02d}"
+            ).do(job)
+        elif task.repeat_type == RepeatType.MONTHLY:
+            # 简化：每 30 天执行一次
+            schedule.every(30).days.at(f"{task.hour:02d}:{task.minute:02d}").do(job)
+        elif task.repeat_type == RepeatType.CUSTOM:
+            interval = task.interval_minutes or 60
+            schedule.every(interval).minutes.do(job)
+        else:  # ONCE
+            if task.execute_at:
+                delay = (task.execute_at - datetime.now()).total_seconds()
+                if delay > 0:
+                    schedule.every(int(delay)).seconds.do(job).tag(f"once_{task.task_id}")
+            else:
+                schedule.every(1).minutes.do(job).tag(f"once_{task.task_id}")
     
     def add_task(self, task: ScheduledTask) -> bool:
         """
@@ -257,10 +257,20 @@ class SchedulerService:
             task.enabled = False
             task.status = TaskStatus.CANCELLED
             
-            # 从 schedule 中移除
+            # 从 schedule 中移除所有相关任务
             schedule.clear(f"once_{task_id}")
+            # 清除所有任务（schedule 库没有更好的方法按任务ID清除）
+            # 注意：这会清除所有任务，然后重新添加剩余的任务
+            temp_tasks = list(self.tasks.values())
+            schedule.clear()
             
             del self.tasks[task_id]
+            
+            # 重新添加剩余的任务
+            for t in temp_tasks:
+                if t.task_id != task_id and t.enabled:
+                    self._schedule_task(t)
+            
             logger.info(f"已移除定时任务：{task_id}")
             return True
     
@@ -286,6 +296,15 @@ class SchedulerService:
             
             task = self.tasks[task_id]
             task.enabled = False
+            
+            # 从调度器中移除任务
+            temp_tasks = list(self.tasks.values())
+            schedule.clear()
+            
+            # 重新添加剩余的启用任务
+            for t in temp_tasks:
+                if t.task_id != task_id and t.enabled:
+                    self._schedule_task(t)
             
             logger.info(f"已禁用任务：{task_id}")
             return True
@@ -315,8 +334,32 @@ class SchedulerService:
             if task.callback:
                 result = task.callback(task.params)
             else:
-                # TODO: 调用 Skill 引擎执行动作
-                result = {'success': True, 'message': f'任务 {task.name} 执行完成'}
+                # 调用 LLM 模型执行任务
+                llm_service = get_llm_service()
+                if llm_service:
+                    # 构建消息列表
+                    messages = [
+                        {"role": "system", "content": f"你是一个定时任务执行助手，需要按照任务需求执行操作。"},
+                        {"role": "user", "content": f"任务名称：{task.name}\n任务描述：{task.description}\n执行动作：{task.action}\n任务参数：{task.params}"}
+                    ]
+                    
+                    # 调用模型
+                    llm_result = llm_service.chat_completion(messages, temperature=0.7, max_tokens=1000)
+                    
+                    if llm_result.get('success'):
+                        result = {
+                            'success': True,
+                            'message': f'任务 {task.name} 执行完成',
+                            'llm_response': llm_result.get('response')
+                        }
+                    else:
+                        result = {
+                            'success': False,
+                            'message': f'任务 {task.name} 执行失败：{llm_result.get("error", "模型调用失败")}'
+                        }
+                else:
+                    # 当 LLM 服务不可用时，执行默认动作
+                    result = {'success': True, 'message': f'任务 {task.name} 执行完成（LLM 服务未启用）'}
             
             execution_record['status'] = 'success'
             execution_record['result'] = result
