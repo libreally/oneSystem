@@ -50,6 +50,18 @@ const routes = [
     meta: { title: '配置中心', icon: 'config' }
   },
   {
+    path: '/config/:category',
+    name: 'ConfigList',
+    component: () => import('@/views/ConfigList.vue'),
+    meta: { title: '配置列表', icon: 'config' }
+  },
+  {
+    path: '/config/:configType/:configName',
+    name: 'ConfigDetail',
+    component: () => import('@/views/ConfigDetail.vue'),
+    meta: { title: '配置详情', icon: 'config' }
+  },
+  {
     path: '/profile',
     name: 'Profile',
     component: () => import('@/views/Profile.vue'),
