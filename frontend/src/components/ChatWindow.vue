@@ -75,7 +75,7 @@
           :class="message.role === 'user' ? 'user' : 'ai'"
         >
           <div class="message-avatar" :class="message.role === 'user' ? 'user-avatar-chat' : 'ai-avatar'">
-            {{ message.role === 'user' ? '张' : '🤖' }}
+            {{ message.role === 'user' ? 'A' : '🤖' }}
           </div>
           <div class="message-wrapper">
             <div class="message-content" v-if="message.role === 'assistant'" v-html="renderMarkdown(message.content)"></div>
@@ -160,16 +160,16 @@ const currentChatStatus = computed(() => {
 })
 
 const sendMessage = async () => {
-  if (!inputMessage.value.trim()) return
-  const message = inputMessage.value
-  inputMessage.value = ''
-  try {
-    await chatStore.sendMessage(message)
-  } catch (error) {
-    console.error('Send message failed:', error)
-    inputMessage.value = message
+    if (!inputMessage.value.trim()) return
+    const message = inputMessage.value
+    inputMessage.value = ''
+    try {
+      await chatStore.sendMessage(message, currentChat.value)
+    } catch (error) {
+      console.error('Send message failed:', error)
+      inputMessage.value = message
+    }
   }
-}
 
 const handleKeypress = (event) => {
   if (event.key === 'Enter') {

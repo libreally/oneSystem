@@ -90,7 +90,7 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  async function sendMessage(content) {
+  async function sendMessage(content, contact = null) {
     if (!content.trim()) return;
 
     isLoading.value = true;
@@ -109,12 +109,14 @@ export const useChatStore = defineStore('chat', () => {
     try {
       console.log('Sending message:', content);
       
-      // 如果没有会话ID，创建一个AI自动化助手会话
+      // 如果没有会话ID，创建一个会话
       if (!currentSessionId.value) {
-        const newSession = await createSession('AI自动化助手');
+        const sessionTitle = contact || 'AI自动化助手';
+        const newSession = await createSession(sessionTitle);
         currentSessionId.value = newSession.id;
       }
       
+      // 无论是否选择联系人，都使用default_user（后端会处理为admin）
       const data = await chatApi.sendMessage(content, 'default_user', currentSessionId.value);
       console.log('Received response:', data);
       

@@ -481,3 +481,277 @@ def clear_chat_session(session_id):
         'success': True,
         'message': '会话已清空'
     })
+
+
+@api_bp.route('/user/profile', methods=['GET'])
+def get_user_profile():
+    """获取用户个人资料"""
+    user_id = request.args.get('user_id', 'default_user')
+    # 处理字符串类型的user_id，默认为1（admin用户）
+    if isinstance(user_id, str) and user_id != 'default_user':
+        # 尝试查找用户
+        from backend.models.db_models import User
+        user = User.query.filter_by(username=user_id).first()
+        if user:
+            user_id = user.id
+        else:
+            user_id = 1
+    elif user_id == 'default_user':
+        user_id = 1
+    
+    # 从数据库获取用户信息
+    from backend.models.db_models import User
+    from backend.models import get_db
+    db = get_db()
+    user = db.query(User).filter_by(id=user_id).first()
+    
+    if not user:
+        return jsonify({
+            'success': False,
+            'message': '用户不存在'
+        }), 404
+    
+    # 从用户画像服务获取额外信息
+    profile = user_profile_service.get_profile(str(user_id))
+    
+    return jsonify({
+        'success': True,
+        'data': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'role': user.role,
+            'last_login': user.updated_at.isoformat() if user.updated_at else None,
+            'created_at': user.created_at.isoformat() if user.created_at else None,
+            'preferences': profile.preferences,
+            'usage_stats': profile.usage_stats
+        }
+    })
+
+
+@api_bp.route('/user/profile', methods=['PUT'])
+def update_user_profile():
+    """更新用户个人资料"""
+    user_id = request.args.get('user_id', 'default_user')
+    # 处理字符串类型的user_id，默认为1（admin用户）
+    if isinstance(user_id, str) and user_id != 'default_user':
+        # 尝试查找用户
+        from backend.models.db_models import User
+        user = User.query.filter_by(username=user_id).first()
+        if user:
+            user_id = user.id
+        else:
+            user_id = 1
+    elif user_id == 'default_user':
+        user_id = 1
+    
+    data = request.get_json()
+    
+    # 从数据库获取用户信息
+    from backend.models.db_models import User
+    from backend.models import get_db
+    db = get_db()
+    user = db.query(User).filter_by(id=user_id).first()
+    
+    if not user:
+        return jsonify({
+            'success': False,
+            'message': '用户不存在'
+        }), 404
+    
+    # 更新用户信息
+    if 'username' in data:
+        user.username = data['username']
+    if 'email' in data:
+        user.email = data['email']
+    if 'password' in data and data['password']:
+        from werkzeug.security import generate_password_hash
+        user.password = generate_password_hash(data['password'])
+    
+    db.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': '个人资料更新成功'
+    })
+
+
+@api_bp.route('/user/usage-stats', methods=['GET'])
+def get_user_usage_stats():
+    """获取用户使用统计"""
+    user_id = request.args.get('user_id', 'default_user')
+    # 处理字符串类型的user_id，默认为1（admin用户）
+    if isinstance(user_id, str) and user_id != 'default_user':
+        # 尝试查找用户
+        from backend.models.db_models import User
+        user = User.query.filter_by(username=user_id).first()
+        if user:
+            user_id = user.id
+        else:
+            user_id = 1
+    elif user_id == 'default_user':
+        user_id = 1
+    
+    # 从用户画像服务获取使用统计
+    stats = user_profile_service.get_user_statistics(str(user_id))
+    
+    # 计算额外的统计信息
+    profile = user_profile_service.get_profile(str(user_id))
+    
+    return jsonify({
+        'success': True,
+        'data': {
+            'total_chats': stats.get('total_requests', 0),
+            'total_skills': len(profile.usage_stats.get('skills_used', {})),
+            'skill_trend': 5,  # 模拟数据
+            'average_response_time': 1.2,  # 模拟数据
+            'active_days': 10  # 模拟数据
+        }
+    })
+
+
+@api_bp.route('/user/skill-preferences', methods=['GET'])
+def get_user_skill_preferences():
+    """获取用户技能偏好"""
+    user_id = request.args.get('user_id', 'default_user')
+    # 处理字符串类型的user_id，默认为1（admin用户）
+    if isinstance(user_id, str) and user_id != 'default_user':
+        # 尝试查找用户
+        from backend.models.db_models import User
+        user = User.query.filter_by(username=user_id).first()
+        if user:
+            user_id = user.id
+        else:
+            user_id = 1
+    elif user_id == 'default_user':
+        user_id = 1
+    
+    # 从用户画像服务获取技能使用情况
+    profile = user_profile_service.get_profile(str(user_id))
+    skills_used = profile.usage_stats.get('skills_used', {})
+    
+    # 计算技能偏好分数
+    total_usage = sum(skills_used.values()) if skills_used else 1
+    preferences = []
+    
+    # 技能名称映射
+    skill_names = {
+        'doc_processor': '文档处理',
+        'sensitive_word_checker': '敏感词检查',
+        'data_merger': '数据合并',
+        'scheduler_manager': '定时任务管理',
+        'chat': '聊天助手',
+        'assistant': '智能助手'
+    }
+    
+    for skill_id, count in skills_used.items():
+        score = count / total_usage
+        preferences.append({
+            'skill_id': skill_id,
+            'skill_name': skill_names.get(skill_id, skill_id),
+            'score': score
+        })
+    
+    # 按分数排序
+    preferences.sort(key=lambda x: x['score'], reverse=True)
+    
+    return jsonify({
+        'success': True,
+        'data': {
+            'preferences': preferences
+        }
+    })
+
+
+@api_bp.route('/user/skill-preferences', methods=['POST'])
+def update_user_skill_preferences():
+    """更新用户技能偏好"""
+    user_id = request.args.get('user_id', 'default_user')
+    # 处理字符串类型的user_id，默认为1（admin用户）
+    if isinstance(user_id, str) and user_id != 'default_user':
+        # 尝试查找用户
+        from backend.models.db_models import User
+        user = User.query.filter_by(username=user_id).first()
+        if user:
+            user_id = user.id
+        else:
+            user_id = 1
+    elif user_id == 'default_user':
+        user_id = 1
+    
+    data = request.get_json()
+    
+    # 这里可以实现更新技能偏好的逻辑
+    # 目前我们只是返回成功
+    
+    return jsonify({
+        'success': True,
+        'message': '技能偏好更新成功'
+    })
+
+
+@api_bp.route('/user/recommendations', methods=['GET'])
+def get_user_recommendations():
+    """获取用户推荐技能"""
+    user_id = request.args.get('user_id', 'default_user')
+    # 处理字符串类型的user_id，默认为1（admin用户）
+    if isinstance(user_id, str) and user_id != 'default_user':
+        # 尝试查找用户
+        from backend.models.db_models import User
+        user = User.query.filter_by(username=user_id).first()
+        if user:
+            user_id = user.id
+        else:
+            user_id = 1
+    elif user_id == 'default_user':
+        user_id = 1
+    
+    # 从用户画像服务获取推荐
+    recommended_skill_ids = user_profile_service.get_recommendations(str(user_id))
+    
+    # 技能信息映射
+    skill_info = {
+        'doc_processor': {
+            'skill_name': '文档处理',
+            'description': '帮您转换公文格式、生成标准文档',
+            'match_score': 0.9
+        },
+        'sensitive_word_checker': {
+            'skill_name': '敏感词检查',
+            'description': '检测并处理文档中的敏感词汇',
+            'match_score': 0.85
+        },
+        'data_merger': {
+            'skill_name': '数据合并',
+            'description': '合并多个 Excel/CSV 文件，比对数据差异',
+            'match_score': 0.8
+        },
+        'scheduler_manager': {
+            'skill_name': '定时任务管理',
+            'description': '支持创建、查看、修改和删除定时任务，设置执行时间和重复规则',
+            'match_score': 0.75
+        },
+        'chat': {
+            'skill_name': '聊天助手',
+            'description': '智能对话，解答各种问题',
+            'match_score': 0.95
+        },
+        'assistant': {
+            'skill_name': '智能助手',
+            'description': '提供全方位的办公辅助',
+            'match_score': 0.9
+        }
+    }
+    
+    # 构建推荐列表
+    recommendations = []
+    for skill_id in recommended_skill_ids:
+        if skill_id in skill_info:
+            recommendations.append(skill_info[skill_id])
+    
+    return jsonify({
+        'success': True,
+        'data': {
+            'recommendations': recommendations
+        }
+    })

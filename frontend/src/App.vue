@@ -57,8 +57,8 @@
         <div class="user-info">
           <span>🔔</span>
           <span>📧</span>
-          <div class="user-avatar">张</div>
-          <span>张三</span>
+          <div class="user-avatar">{{ userInitial }}</div>
+          <span>{{ userName }}</span>
         </div>
       </header>
 
@@ -80,14 +80,30 @@
 import { ref, onMounted } from 'vue'
 import { useChatStore } from './stores/chat'
 import ChatWindow from './components/ChatWindow.vue'
+import { userApi } from './api/modules'
 
 const chatStore = useChatStore()
 const searchText = ref('')
+const userName = ref('admin')
+const userInitial = ref('A')
 
-onMounted(() => {
+onMounted(async () => {
   // 初始化应用
   console.log('App initialized')
+  await fetchUserInfo()
 })
+
+const fetchUserInfo = async () => {
+  try {
+    const response = await userApi.getProfile()
+    if (response.data) {
+      userName.value = response.data.username || 'admin'
+      userInitial.value = response.data.username ? response.data.username.charAt(0).toUpperCase() : 'A'
+    }
+  } catch (error) {
+    console.error('获取用户信息失败:', error)
+  }
+}
 
 const toggleChatWindow = () => {
   console.log('Before toggle - isChatWindowOpen:', chatStore.isChatWindowOpen)
