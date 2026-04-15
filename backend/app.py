@@ -98,9 +98,14 @@ def create_app():
     init_permission_service()
     
     # 配置日志
+    log_file = os.path.join(DATA_DIR, 'app.log')
     logging.basicConfig(
         level=logging.INFO,
-        format=LOG_FORMAT
+        format=LOG_FORMAT,
+        handlers=[
+            logging.FileHandler(log_file),
+            logging.StreamHandler()
+        ]
     )
     
     # 首页路由
