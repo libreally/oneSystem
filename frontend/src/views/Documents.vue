@@ -58,11 +58,17 @@
     <div class="dialog" v-if="showPreviewDialog">
       <div class="dialog-content preview-dialog">
         <div class="dialog-header">
-          <h3>文件预览</h3>
+          <h3>{{ previewFilename }}</h3>
           <button class="close-btn" @click="showPreviewDialog = false">&times;</button>
         </div>
         <div class="dialog-body">
           <img v-if="previewType === 'image'" :src="previewUrl" class="preview-image">
+          <div v-else-if="previewType === 'text'" class="preview-text">
+            <pre>{{ previewContent }}</pre>
+          </div>
+          <div v-else-if="previewType === 'embed'" class="preview-embed">
+            <iframe :src="previewUrl" width="100%" height="100%" frameborder="0"></iframe>
+          </div>
           <div v-else class="preview-info">
             <p><strong>文件名：</strong>{{ previewData.filename }}</p>
             <p><strong>大小：</strong>{{ formatSize(previewData.size) }}</p>
@@ -87,6 +93,8 @@ const selectedFiles = ref([]);
 const previewUrl = ref('');
 const previewType = ref('');
 const previewData = ref({});
+const previewContent = ref('');
+const previewFilename = ref('');
 
 // 初始化
 onMounted(() => {
@@ -188,16 +196,31 @@ async function previewDocument(doc) {
   console.log('开始预览文件:', doc.filename);
   try {
     const ext = doc.extension.toLowerCase();
+    const encodedFilename = encodeURIComponent(doc.filename);
     if (['.jpg', '.jpeg', '.png', '.gif'].includes(ext)) {
       console.log('预览图片文件:', doc.filename);
+      previewFilename.value = doc.filename;
       previewType.value = 'image';
-      previewUrl.value = `/api/documents/preview/${doc.filename}`;
+      previewUrl.value = `/api/documents/preview/${encodedFilename}`;
+      showPreviewDialog.value = true;
+    } else if (['.md', '.txt', '.docx', '.xlsx'].includes(ext)) {
+      console.log('预览文本/Word/Excel文件:', doc.filename);
+      previewFilename.value = doc.filename;
+      previewType.value = 'text';
+      const response = await fetch(`/api/documents/preview/${encodedFilename}`);
+      previewContent.value = await response.text();
+      showPreviewDialog.value = true;
+    } else if (['.pdf'].includes(ext)) {
+      console.log('预览PDF文件:', doc.filename);
+      // 直接打开PDF文件预览
+      window.open(`/api/documents/preview/${encodedFilename}`, '_blank');
     } else {
       console.log('预览文件信息:', doc.filename);
+      previewFilename.value = doc.filename;
       previewType.value = 'info';
       previewData.value = doc;
+      showPreviewDialog.value = true;
     }
-    showPreviewDialog.value = true;
   } catch (error) {
     console.error('文件预览失败:', error);
     alert('文件预览失败');
@@ -334,7 +357,10 @@ function formatSize(bytes) {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 .preview-dialog {
-  width: 600px;
+  width: 800px;
+  max-width: 90%;
+  max-height: 90vh;
+  overflow: auto;
 }
 .dialog-header {
   padding: 16px;
@@ -366,6 +392,7 @@ function formatSize(bytes) {
 }
 .dialog-body {
   padding: 20px;
+  min-height: 500px;
 }
 .dialog-body input[type="file"] {
   width: 100%;
@@ -381,8 +408,24 @@ function formatSize(bytes) {
 }
 .preview-image {
   max-width: 100%;
-  max-height: 400px;
+  max-height: 600px;
   object-fit: contain;
+}
+.preview-text {
+  max-height: 600px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-family: 'Courier New', Courier, monospace;
+  line-height: 1.5;
+}
+.preview-text pre {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.preview-embed {
+  width: 100%;
+  height: 600px;
+  overflow: hidden;
 }
 .preview-info {
   line-height: 1.6;

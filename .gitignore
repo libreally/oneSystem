@@ -24,6 +24,7 @@ coverage.xml
 *.pyd
 .MF
 tags
+.upload/
 TAGS
 *.tmproj
 *.swp

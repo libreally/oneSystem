@@ -6,6 +6,15 @@ import os
 import logging
 from backend.config.settings import UPLOAD_DIR, ALLOWED_EXTENSIONS, MAX_UPLOAD_SIZE
 
+# 导入用于解析Word和Excel的库
+try:
+    from docx import Document
+    import pandas as pd
+    WORD_EXCEL_SUPPORT = True
+except ImportError:
+    WORD_EXCEL_SUPPORT = False
+    logging.warning("未安装docx和pandas库，无法解析Word和Excel文件")
+
 logger = logging.getLogger(__name__)
 
 # 创建蓝图
@@ -228,6 +237,92 @@ def delete_document(filename):
             'message': f'文件删除失败: {str(e)}'
         }), 500
 
+def parse_word_to_md(file_path):
+    """将Word文档转换为Markdown格式"""
+    try:
+        doc = Document(file_path)
+        md_content = []
+        
+        for paragraph in doc.paragraphs:
+            text = paragraph.text.strip()
+            if not text:
+                md_content.append('')
+                continue
+            
+            # 处理标题级别
+            if paragraph.style.name.startswith('Heading'):
+                level = int(paragraph.style.name[-1])
+                md_content.append(f"{'#' * level} {text}")
+            else:
+                # 处理普通段落
+                md_content.append(text)
+        
+        # 处理表格
+        for table in doc.tables:
+            # 提取表头
+            headers = [cell.text.strip() for cell in table.rows[0].cells]
+            # 提取数据行
+            rows = []
+            for row in table.rows[1:]:
+                rows.append([cell.text.strip() for cell in row.cells])
+            
+            # 生成Markdown表格
+            md_table = []
+            md_table.append('| ' + ' | '.join(headers) + ' |')
+            md_table.append('| ' + ' | '.join(['---' for _ in headers]) + ' |')
+            for row in rows:
+                md_table.append('| ' + ' | '.join(row) + ' |')
+            
+            md_content.extend(md_table)
+            md_content.append('')
+        
+        return '\n'.join(md_content)
+    except Exception as e:
+        logger.error(f"解析Word文件失败: {str(e)}")
+        return f"# 解析Word文件失败\n\n{str(e)}"
+
+def parse_excel_to_md(file_path):
+    """将Excel文件转换为Markdown格式"""
+    try:
+        # 读取Excel文件的所有工作表
+        xl_file = pd.ExcelFile(file_path)
+        md_content = []
+        
+        for sheet_name in xl_file.sheet_names:
+            # 添加工作表名称作为标题
+            md_content.append(f"# {sheet_name}")
+            md_content.append('')
+            
+            # 读取工作表数据
+            df = pd.read_excel(file_path, sheet_name=sheet_name)
+            
+            # 生成Markdown表格
+            if not df.empty:
+                # 表头
+                headers = list(df.columns)
+                md_content.append('| ' + ' | '.join(headers) + ' |')
+                md_content.append('| ' + ' | '.join(['---' for _ in headers]) + ' |')
+                
+                # 数据行
+                for _, row in df.iterrows():
+                    row_data = []
+                    for val in row:
+                        # 处理NaN值
+                        if pd.isna(val):
+                            row_data.append('')
+                        else:
+                            row_data.append(str(val))
+                    md_content.append('| ' + ' | '.join(row_data) + ' |')
+                md_content.append('')
+            else:
+                md_content.append("该工作表为空")
+                md_content.append('')
+        
+        return '\n'.join(md_content)
+    except Exception as e:
+        logger.error(f"解析Excel文件失败: {str(e)}")
+        return f"# 解析Excel文件失败\n\n{str(e)}"
+
 @document_bp.route('/preview/<filename>', methods=['GET'])
 def preview_document(filename):
     """预览文档"""
@@ -239,6 +334,28 @@ def preview_document(filename):
             ext = os.path.splitext(filename)[1].lower()
             if ext in ['.jpg', '.jpeg', '.png', '.gif']:
                 logger.info(f"预览图片文件：{filename}")
+                return send_from_directory(UPLOAD_DIR, filename)
+            elif ext in ['.md', '.txt']:
+                logger.info(f"预览文本文件：{filename}")
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read()
+                return content, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+            elif ext in ['.docx']:
+                logger.info(f"预览Word文件：{filename}")
+                if WORD_EXCEL_SUPPORT:
+                    content = parse_word_to_md(file_path)
+                    return content, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+                else:
+                    return send_from_directory(UPLOAD_DIR, filename)
+            elif ext in ['.xlsx']:
+                logger.info(f"预览Excel文件：{filename}")
+                if WORD_EXCEL_SUPPORT:
+                    content = parse_excel_to_md(file_path)
+                    return content, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+                else:
+                    return send_from_directory(UPLOAD_DIR, filename)
+            elif ext in ['.pdf']:
+                logger.info(f"预览PDF文件：{filename}")
                 return send_from_directory(UPLOAD_DIR, filename)
             else:
                 # 对于其他文件类型，返回文件信息
