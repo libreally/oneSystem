@@ -109,7 +109,7 @@ class FileRetrievalService:
         if keywords is None and query:
             keywords = self.extract_keywords(query)
         
-        logger.info(f"开始搜索文件，关键词：{keywords}, 路径：{paths}")
+        logger.info(f"开始搜索文件，查询：{query}, 关键词：{keywords}, 文件类型：{file_types}, 最大结果数：{max_results}, 路径数量：{len(paths)}")
         
         # 遍历搜索路径
         for search_path in paths:
@@ -124,16 +124,19 @@ class FileRetrievalService:
                     max_results
                 )
                 results.extend(matched_files)
+                logger.info(f"在路径 {search_path} 中找到 {len(matched_files)} 个匹配文件")
             except Exception as e:
                 logger.warning(f"搜索路径 {search_path} 时出错：{str(e)}")
             
             # 如果已经找到足够的结果，提前退出
             if len(results) >= max_results:
+                logger.info(f"已找到足够的结果 ({len(results)} 个)，提前退出")
                 break
         
         # 按相关度排序
         results.sort(key=lambda x: x.get('relevance_score', 0), reverse=True)
         
+        logger.info(f"搜索完成，共找到 {len(results)} 个匹配文件")
         return results[:max_results]
     
     def _search_in_directory(self, 
@@ -156,9 +159,13 @@ class FileRetrievalService:
         matched_files = []
         
         try:
+            logger.info(f"开始搜索目录：{directory}, 关键词：{keywords}, 扩展名：{extensions}, 最大结果数：{max_results}")
+            
             for root, dirs, files in os.walk(directory):
                 # 跳过隐藏目录和系统目录
                 dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['node_modules', '__pycache__']]
+                
+                logger.debug(f"遍历目录：{root}, 子目录数：{len(dirs)}, 文件数：{len(files)}")
                 
                 for filename in files:
                     # 检查扩展名
@@ -184,14 +191,18 @@ class FileRetrievalService:
                             'match_keywords': self._get_matched_keywords(filename, keywords)
                         })
                         
+                        logger.debug(f"找到匹配文件：{filename}, 相关度：{score}")
+                        
                         if len(matched_files) >= max_results:
+                            logger.info(f"已达到最大结果数 {max_results}，停止搜索目录 {directory}")
                             return matched_files
                             
         except PermissionError:
-            pass  # 跳过无权限访问的目录
+            logger.warning(f"无权限访问目录：{directory}")
         except Exception as e:
             logger.warning(f"搜索目录 {directory} 时异常：{str(e)}")
         
+        logger.info(f"目录搜索完成，在 {directory} 中找到 {len(matched_files)} 个匹配文件")
         return matched_files
     
     def _calculate_relevance(self, filename: str, keywords: List[str]) -> float:
@@ -211,6 +222,8 @@ class FileRetrievalService:
         filename_lower = filename.lower()
         score = 0
         
+        logger.debug(f"开始计算文件相关度，文件名：{filename}，关键词：{keywords}")
+        
         for keyword in keywords:
             keyword_lower = keyword.lower()
             
@@ -218,20 +231,26 @@ class FileRetrievalService:
             name_without_ext = os.path.splitext(filename)[0].lower()
             if keyword_lower == name_without_ext:
                 score += 50
+                logger.debug(f"关键词 '{keyword}' 完全匹配文件名，加 50 分")
             
             # 包含关键词
             elif keyword_lower in filename_lower:
                 # 在文件名开头匹配得分更高
                 if filename_lower.startswith(keyword_lower):
                     score += 30
+                    logger.debug(f"关键词 '{keyword}' 在文件名开头，加 30 分")
                 else:
                     score += 20
+                    logger.debug(f"关键词 '{keyword}' 在文件名中，加 20 分")
             
             # 部分匹配（关键词包含文件名的一部分）
             elif name_without_ext in keyword_lower:
                 score += 10
+                logger.debug(f"文件名包含在关键词 '{keyword}' 中，加 10 分")
         
-        return min(score, 100)  # 最高 100 分
+        final_score = min(score, 100)  # 最高 100 分
+        logger.debug(f"文件 {filename} 的最终相关度分数：{final_score}")
+        return final_score
     
     def _get_matched_keywords(self, filename: str, keywords: List[str]) -> List[str]:
         """获取匹配的关键词"""
@@ -257,11 +276,17 @@ class FileRetrievalService:
         Returns:
             是否成功
         """
+        logger.info(f"开始添加文件到会话知识库，会话 ID：{session_id}，文件数量：{len(file_paths)}")
+        
         if session_id not in self.session_knowledge_base:
             self.session_knowledge_base[session_id] = {
                 'files': {},
                 'created_at': datetime.now().isoformat()
             }
+            logger.info(f"为会话 {session_id} 创建新的知识库")
+        
+        added_count = 0
+        skipped_count = 0
         
         for file_path in file_paths:
             if os.path.exists(file_path):
@@ -275,8 +300,13 @@ class FileRetrievalService:
                     'size': file_stat.st_size,
                     'added_at': datetime.now().isoformat()
                 }
+                logger.info(f"成功添加文件到知识库：{filename} (大小：{file_stat.st_size} 字节)")
+                added_count += 1
+            else:
+                logger.warning(f"跳过不存在的文件：{file_path}")
+                skipped_count += 1
         
-        logger.info(f"已为会话 {session_id} 添加 {len(file_paths)} 个文件到知识库")
+        logger.info(f"文件添加完成，会话 {session_id}：成功添加 {added_count} 个文件，跳过 {skipped_count} 个文件")
         return True
     
     def get_session_knowledge_base(self, session_id: str) -> Dict[str, Any]:
@@ -304,11 +334,16 @@ class FileRetrievalService:
         Returns:
             是否成功
         """
+        logger.info(f"开始清空会话知识库，会话 ID：{session_id}")
+        
         if session_id in self.session_knowledge_base:
+            file_count = len(self.session_knowledge_base[session_id].get('files', {}))
             del self.session_knowledge_base[session_id]
-            logger.info(f"已清空会话 {session_id} 的知识库")
+            logger.info(f"成功清空会话 {session_id} 的知识库，共删除 {file_count} 个文件")
             return True
-        return False
+        else:
+            logger.warning(f"会话 {session_id} 的知识库不存在，无需清空")
+            return False
     
     def search_in_session_knowledge_base(self, 
                                           session_id: str, 
@@ -361,7 +396,10 @@ class FileRetrievalService:
         Returns:
             文件内容或 None
         """
+        logger.info(f"开始读取文件内容，文件路径：{file_path}，最大长度：{max_length}")
+        
         if not os.path.exists(file_path):
+            logger.warning(f"文件不存在：{file_path}")
             return None
         
         _, ext = os.path.splitext(file_path)
@@ -370,12 +408,13 @@ class FileRetrievalService:
         # 只读取文本类文件
         text_extensions = {'.txt', '.md', '.json', '.xml', '.yaml', '.yml', '.csv'}
         if ext not in text_extensions:
-            logger.warning(f"不支持读取 {ext} 类型文件的内容")
+            logger.warning(f"不支持读取 {ext} 类型文件的内容，文件：{file_path}")
             return None
         
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read(max_length)
+            logger.info(f"成功读取文件内容，文件：{file_path}，读取长度：{len(content)} 字符")
             return content
         except Exception as e:
             logger.error(f"读取文件 {file_path} 失败：{str(e)}")
@@ -391,7 +430,10 @@ class FileRetrievalService:
         Returns:
             文件信息字典
         """
+        logger.info(f"开始获取文件信息，文件路径：{file_path}")
+        
         if not os.path.exists(file_path):
+            logger.warning(f"文件不存在：{file_path}")
             return None
         
         try:
@@ -399,7 +441,7 @@ class FileRetrievalService:
             _, filename = os.path.split(file_path)
             _, ext = os.path.splitext(filename)
             
-            return {
+            file_info = {
                 'file_path': file_path,
                 'filename': filename,
                 'extension': ext.lower(),
@@ -408,8 +450,11 @@ class FileRetrievalService:
                 'modified_time': datetime.fromtimestamp(file_stat.st_mtime).isoformat(),
                 'is_readable': ext.lower() in {'.txt', '.md', '.json', '.xml', '.yaml', '.yml', '.csv'}
             }
+            
+            logger.info(f"成功获取文件信息，文件：{filename}，大小：{file_stat.st_size} 字节")
+            return file_info
         except Exception as e:
-            logger.error(f"获取文件信息失败：{str(e)}")
+            logger.error(f"获取文件信息失败，文件：{file_path}，错误：{str(e)}")
             return None
 
 

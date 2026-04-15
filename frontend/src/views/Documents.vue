@@ -95,11 +95,15 @@ onMounted(() => {
 
 // 获取文档列表
 async function fetchDocuments() {
+  console.log('开始获取文档列表');
   try {
     const response = await fetch('/api/documents');
     const data = await response.json();
     if (data.success) {
       documents.value = data.data.documents;
+      console.log('获取文档列表成功，共', documents.value.length, '个文档');
+    } else {
+      console.error('获取文档列表失败:', data.message);
     }
   } catch (error) {
     console.error('获取文档列表失败:', error);
@@ -118,9 +122,12 @@ async function uploadFile() {
     return;
   }
   
+  console.log('开始上传文件，共', selectedFiles.value.length, '个文件');
+  
   const formData = new FormData();
   for (let i = 0; i < selectedFiles.value.length; i++) {
     formData.append('file', selectedFiles.value[i]);
+    console.log('添加文件到上传队列:', selectedFiles.value[i].name);
   }
   
   try {
@@ -130,10 +137,12 @@ async function uploadFile() {
     });
     const data = await response.json();
     if (data.success) {
+      console.log('文件上传成功');
       alert('文件上传成功');
       showUploadDialog.value = false;
       fetchDocuments();
     } else {
+      console.error('文件上传失败:', data.message);
       alert('文件上传失败: ' + data.message);
     }
   } catch (error) {
@@ -153,15 +162,19 @@ async function deleteDocument(filename) {
     return;
   }
   
+  console.log('开始删除文件:', filename);
+  
   try {
     const response = await fetch(`/api/documents/${filename}`, {
       method: 'DELETE'
     });
     const data = await response.json();
     if (data.success) {
+      console.log('文件删除成功:', filename);
       alert('文件删除成功');
       fetchDocuments();
     } else {
+      console.error('文件删除失败:', data.message);
       alert('文件删除失败: ' + data.message);
     }
   } catch (error) {
@@ -172,12 +185,15 @@ async function deleteDocument(filename) {
 
 // 预览文件
 async function previewDocument(doc) {
+  console.log('开始预览文件:', doc.filename);
   try {
     const ext = doc.extension.toLowerCase();
     if (['.jpg', '.jpeg', '.png', '.gif'].includes(ext)) {
+      console.log('预览图片文件:', doc.filename);
       previewType.value = 'image';
       previewUrl.value = `/api/documents/preview/${doc.filename}`;
     } else {
+      console.log('预览文件信息:', doc.filename);
       previewType.value = 'info';
       previewData.value = doc;
     }
