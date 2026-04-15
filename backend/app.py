@@ -23,7 +23,8 @@ from backend.routes import (
     integration_bp,
     wps_bp,
     skill_generator_bp,
-    permission_bp
+    permission_bp,
+    document_bp
 )
 from backend.services.scheduler_service import init_scheduler_service
 from backend.services.integration_service import init_integration_service
@@ -66,6 +67,7 @@ def create_app():
     app.register_blueprint(wps_bp)
     app.register_blueprint(skill_generator_bp)
     app.register_blueprint(permission_bp)
+    app.register_blueprint(document_bp)
     
     # 初始化 LLM 服务
     init_llm_service(

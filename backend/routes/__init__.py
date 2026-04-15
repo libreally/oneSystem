@@ -12,6 +12,7 @@ from .integration_routes import integration_bp
 from .wps_routes import wps_bp
 from .skill_generator_routes import skill_generator_bp
 from .permission_routes import permission_bp
+from .document_routes import document_bp
 
 __all__ = [
     'api_bp',
@@ -24,5 +25,6 @@ __all__ = [
     'integration_bp',
     'wps_bp',
     'skill_generator_bp',
-    'permission_bp'
+    'permission_bp',
+    'document_bp'
 ]

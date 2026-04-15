@@ -52,6 +52,14 @@ DEFAULT_SEARCH_DIRS = [
 MAX_SEARCH_FILES = 20
 SUPPORTED_FILE_TYPES = ['.doc', '.docx', '.txt', '.pdf', '.xls', '.xlsx', '.csv', '.ppt', '.pptx']
 
+# 文件上传配置
+UPLOAD_DIR = os.environ.get('UPLOAD_DIR', os.path.join(DATA_DIR, 'uploads'))
+MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100MB
+ALLOWED_EXTENSIONS = {'doc', 'docx', 'txt', 'pdf', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'gif'}
+
+# 确保上传目录存在
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 # 权限配置
 ADMIN_ROLES = ['admin', 'manager']
 DEFAULT_USER_ROLE = 'user'
