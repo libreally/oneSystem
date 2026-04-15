@@ -27,9 +27,9 @@ export const useChatStore = defineStore('chat', () => {
       const response = await chatApi.getSessions();
       sessions.value = response.sessions || [];
       
-      // 如果没有会话，创建一个新会话
+      // 如果没有会话，创建一个AI自动化助手会话
       if (sessions.value.length === 0) {
-        await createSession('新对话');
+        await createSession('AI自动化助手');
       } 
       // 如果有会话但没有当前会话，设置第一个会话为当前会话
       else if (!currentSessionId.value) {
@@ -109,9 +109,9 @@ export const useChatStore = defineStore('chat', () => {
     try {
       console.log('Sending message:', content);
       
-      // 如果没有会话ID，创建一个新会话
+      // 如果没有会话ID，创建一个AI自动化助手会话
       if (!currentSessionId.value) {
-        const newSession = await createSession('新对话');
+        const newSession = await createSession('AI自动化助手');
         currentSessionId.value = newSession.id;
       }
       
@@ -211,7 +211,14 @@ export const useChatStore = defineStore('chat', () => {
     loadMessages(sessionId);
   }
 
-  function clearMessages() {
+  async function clearMessages() {
+    if (currentSessionId.value) {
+      try {
+        await chatApi.clearContext(currentSessionId.value);
+      } catch (err) {
+        console.error('Clear context failed:', err);
+      }
+    }
     messages.value = [];
   }
 

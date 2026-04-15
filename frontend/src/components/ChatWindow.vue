@@ -233,15 +233,12 @@ const closeChat = () => {
   chatStore.closeChatWindow()
 }
 
-const clearHistory = () => {
+const clearHistory = async () => {
   if (confirm('确定要清空当前会话历史吗？')) {
-    chatStore.clearMessages()
+    await chatStore.clearMessages()
   }
 }
 
-const addTestMessage = () => {
-  chatStore.addTestMessage()
-}
 
 const renderMarkdown = (content) => {
   return md.render(content)
