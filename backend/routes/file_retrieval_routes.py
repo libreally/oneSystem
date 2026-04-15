@@ -186,10 +186,22 @@ def search_in_knowledge_base():
 @file_retrieval_bp.route('/types', methods=['GET'])
 def get_supported_types():
     """获取支持的文件类型"""
+    # 根据实际安装的库动态更新可读扩展名
+    readable_extensions = ['.txt', '.md', '.json', '.xml', '.yaml', '.yml', '.csv']
+    
+    from backend.services.file_retrieval_service import HAS_DOCX, HAS_XLSX, HAS_PDF
+    if HAS_DOCX:
+        readable_extensions.append('.docx')
+    if HAS_XLSX:
+        readable_extensions.append('.xlsx')
+    if HAS_PDF:
+        readable_extensions.append('.pdf')
+    
     return jsonify({
         'success': True,
         'data': {
             'supported_extensions': list(file_retrieval_service.supported_extensions),
-            'readable_extensions': ['.txt', '.md', '.json', '.xml', '.yaml', '.yml', '.csv']
+            'readable_extensions': readable_extensions,
+            'content_search_enabled': True  # 标记是否支持内容检索
         }
     })

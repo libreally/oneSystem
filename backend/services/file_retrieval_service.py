@@ -2,6 +2,7 @@
 本地文件检索服务
 支持根据用户提问内容自动在本地检索相关文件
 构建本次对话的临时知识库
+支持文件内容语义匹配（文档标题、正文段落、表格内容）
 """
 import os
 import re
@@ -9,6 +10,35 @@ import logging
 from typing import Dict, Any, List, Optional, Set
 from datetime import datetime
 from pathlib import Path
+
+# 导入文档解析库
+try:
+    from docx import Document as DocxDocument
+    HAS_DOCX = True
+except ImportError:
+    HAS_DOCX = False
+    logging.warning("python-docx not installed, .docx parsing disabled")
+
+try:
+    import openpyxl
+    HAS_XLSX = True
+except ImportError:
+    HAS_XLSX = False
+    logging.warning("openpyxl not installed, .xlsx parsing disabled")
+
+try:
+    import PyPDF2
+    HAS_PDF = True
+except ImportError:
+    HAS_PDF = False
+    logging.warning("PyPDF2 not installed, .pdf parsing disabled")
+
+try:
+    import chardet
+    HAS_CHARDET = True
+except ImportError:
+    HAS_CHARDET = False
+    logging.warning("chardet not installed, encoding detection disabled")
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +63,8 @@ class FileRetrievalService:
             '.json', '.xml', '.yaml', '.yml',  # 配置文件
         }
         self.session_knowledge_base: Dict[str, Dict[str, Any]] = {}
+        # 内容缓存，避免重复读取
+        self.content_cache: Dict[str, str] = {}
         
     def _get_default_search_paths(self) -> List[str]:
         """获取默认搜索路径"""
@@ -175,8 +207,14 @@ class FileRetrievalService:
                     
                     file_path = os.path.join(root, filename)
                     
-                    # 计算相关度分数
+                    # 计算相关度分数（包含文件名和内容）
                     score = self._calculate_relevance(filename, keywords)
+                    
+                    # 如果文件名匹配度低，尝试内容匹配
+                    if score < 30 and len(keywords) > 0:
+                        content_score = self._search_in_file_content(file_path, keywords)
+                        if content_score > 0:
+                            score = content_score
                     
                     if score > 0:
                         file_stat = os.stat(file_path)
@@ -188,10 +226,11 @@ class FileRetrievalService:
                             'size': file_stat.st_size,
                             'modified_time': datetime.fromtimestamp(file_stat.st_mtime).isoformat(),
                             'relevance_score': score,
-                            'match_keywords': self._get_matched_keywords(filename, keywords)
+                            'match_keywords': self._get_matched_keywords(filename, keywords),
+                            'content_match': score >= 50 and score < 100  # 标记是否通过内容匹配
                         })
                         
-                        logger.debug(f"找到匹配文件：{filename}, 相关度：{score}")
+                        logger.debug(f"找到匹配文件：{filename}, 相关度：{score}, 内容匹配：{score >= 50 and score < 100}")
                         
                         if len(matched_files) >= max_results:
                             logger.info(f"已达到最大结果数 {max_results}，停止搜索目录 {directory}")
@@ -385,9 +424,147 @@ class FileRetrievalService:
         results.sort(key=lambda x: x['relevance_score'], reverse=True)
         return results
     
+    def _search_in_file_content(self, file_path: str, keywords: List[str]) -> float:
+        """
+        在文件内容中搜索关键词
+        
+        Args:
+            file_path: 文件路径
+            keywords: 关键词列表
+            
+        Returns:
+            相关度分数 (0-80)
+        """
+        content = self._extract_file_content(file_path)
+        if not content:
+            return 0
+        
+        # 缓存内容
+        if file_path not in self.content_cache:
+            self.content_cache[file_path] = content
+        
+        score = 0
+        matched_count = 0
+        content_lower = content.lower()
+        
+        for keyword in keywords:
+            keyword_lower = keyword.lower()
+            
+            # 在内容中查找关键词
+            if keyword_lower in content_lower:
+                matched_count += 1
+                
+                # 根据出现次数增加分数
+                occurrences = content_lower.count(keyword_lower)
+                score += min(20 * occurrences, 40)  # 每个关键词最多 40 分
+                
+                # 如果出现在开头，额外加分
+                if content_lower.startswith(keyword_lower):
+                    score += 10
+        
+        if matched_count > 0:
+            # 基础匹配分 + 匹配比例分
+            match_ratio = matched_count / len(keywords)
+            score += int(match_ratio * 30)
+        
+        return min(score, 80)  # 内容匹配最高 80 分
+    
+    def _extract_file_content(self, file_path: str) -> Optional[str]:
+        """
+        提取文件内容（支持多种格式）
+        
+        Args:
+            file_path: 文件路径
+            
+        Returns:
+            文件文本内容或 None
+        """
+        if not os.path.exists(file_path):
+            return None
+        
+        _, ext = os.path.splitext(file_path)
+        ext = ext.lower()
+        
+        try:
+            # Word 文档 (.docx)
+            if ext == '.docx' and HAS_DOCX:
+                doc = DocxDocument(file_path)
+                paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+                return '\n'.join(paragraphs)
+            
+            # Excel 文件 (.xlsx)
+            elif ext == '.xlsx' and HAS_XLSX:
+                wb = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
+                all_text = []
+                for sheet in wb.worksheets:
+                    for row in sheet.iter_rows(values_only=True):
+                        row_text = ' '.join(str(cell) if cell is not None else '' for cell in row)
+                        if row_text.strip():
+                            all_text.append(row_text)
+                return '\n'.join(all_text[:500])  # 限制行数
+            
+            # CSV 文件
+            elif ext == '.csv':
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    return f.read(50000)  # 限制大小
+            
+            # PDF 文件
+            elif ext == '.pdf' and HAS_PDF:
+                text_parts = []
+                try:
+                    with open(file_path, 'rb') as f:
+                        reader = PyPDF2.PdfReader(f)
+                        for page in reader.pages[:10]:  # 只读取前 10 页
+                            text = page.extract_text()
+                            if text:
+                                text_parts.append(text)
+                    return '\n'.join(text_parts)
+                except Exception as e:
+                    logger.warning(f"PDF 解析失败 {file_path}: {str(e)}")
+                    return None
+            
+            # 文本文件
+            elif ext in {'.txt', '.md', '.json', '.xml', '.yaml', '.yml'}:
+                encoding = 'utf-8'
+                if not HAS_CHARDET:
+                    with open(file_path, 'r', encoding=encoding, errors='ignore') as f:
+                        return f.read(50000)
+                else:
+                    # 自动检测编码
+                    with open(file_path, 'rb') as f:
+                        raw_data = f.read(10000)
+                        result = chardet.detect(raw_data)
+                        encoding = result['encoding'] or 'utf-8'
+                    
+                    with open(file_path, 'r', encoding=encoding, errors='ignore') as f:
+                        return f.read(50000)
+            
+            # .doc 文件（需要额外库，暂时不支持）
+            elif ext == '.doc':
+                logger.info(f".doc 文件需要额外库支持，跳过内容提取：{file_path}")
+                return None
+            
+            # .xls 文件（需要额外库，暂时不支持）
+            elif ext == '.xls':
+                logger.info(f".xls 文件需要额外库支持，跳过内容提取：{file_path}")
+                return None
+            
+            # .ppt/.pptx 文件（需要额外库，暂时不支持）
+            elif ext in {'.ppt', '.pptx'}:
+                logger.info(f"PPT 文件需要额外库支持，跳过内容提取：{file_path}")
+                return None
+            
+            else:
+                logger.debug(f"不支持的文件类型：{ext}, {file_path}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"提取文件内容失败 {file_path}: {str(e)}")
+            return None
+    
     def read_file_content(self, file_path: str, max_length: int = 10000) -> Optional[str]:
         """
-        读取文件内容（仅支持文本类文件）
+        读取文件内容（支持多种格式）
         
         Args:
             file_path: 文件路径
@@ -402,22 +579,14 @@ class FileRetrievalService:
             logger.warning(f"文件不存在：{file_path}")
             return None
         
-        _, ext = os.path.splitext(file_path)
-        ext = ext.lower()
+        content = self._extract_file_content(file_path)
         
-        # 只读取文本类文件
-        text_extensions = {'.txt', '.md', '.json', '.xml', '.yaml', '.yml', '.csv'}
-        if ext not in text_extensions:
-            logger.warning(f"不支持读取 {ext} 类型文件的内容，文件：{file_path}")
-            return None
-        
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read(max_length)
+        if content:
+            content = content[:max_length]
             logger.info(f"成功读取文件内容，文件：{file_path}，读取长度：{len(content)} 字符")
             return content
-        except Exception as e:
-            logger.error(f"读取文件 {file_path} 失败：{str(e)}")
+        else:
+            logger.warning(f"无法读取文件内容：{file_path}")
             return None
     
     def get_file_info(self, file_path: str) -> Optional[Dict[str, Any]]:
