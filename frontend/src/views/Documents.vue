@@ -124,7 +124,7 @@ async function uploadFile() {
   }
   
   try {
-    const response = await fetch('/api/documents', {
+    const response = await fetch('/api/documents/', {
       method: 'POST',
       body: formData
     });
