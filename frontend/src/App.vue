@@ -112,13 +112,26 @@ const handleSearchKeypress = async (event) => {
 }
 </script>
 
-<style scoped>
+<style>
+/* 全局样式重置 */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+#app {
+  height: 100%;
+}
+</style>
+
+<style scoped>
 .container {
   display: flex;
   min-height: 100vh;
@@ -130,9 +143,12 @@ const handleSearchKeypress = async (event) => {
   background: rgb(0, 101, 105);
   color: white;
   position: fixed;
+  left: 0;
+  top: 0;
   height: 100vh;
   overflow-y: auto;
   transition: all 0.3s;
+  z-index: 100;
 }
 
 .logo {
@@ -181,6 +197,8 @@ const handleSearchKeypress = async (event) => {
   flex: 1;
   margin-left: 240px;
   padding: 20px;
+  min-height: 100vh;
+  overflow-y: auto;
 }
 
 .header {
