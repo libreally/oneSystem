@@ -21,55 +21,66 @@ export default {
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background-color: #f5f5f5;
+  background-color: #f5f7fa;
 }
 
 .not-found-content {
   text-align: center;
   background-color: #fff;
-  padding: 3rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 60px 40px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   max-width: 500px;
   width: 90%;
+  transition: all 0.3s;
+}
+
+.not-found-content:hover {
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
 }
 
 .not-found-content h1 {
-  font-size: 4rem;
+  font-size: 72px;
   font-weight: 700;
-  color: #2196f3;
-  margin: 0 0 1rem 0;
+  color: rgb(0, 101, 105);
+  margin: 0 0 20px 0;
+  line-height: 1;
 }
 
 .not-found-content h2 {
-  font-size: 1.5rem;
+  font-size: 24px;
+  font-weight: 600;
   color: #333;
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 15px 0;
 }
 
 .not-found-content p {
   color: #666;
-  margin: 0 0 2rem 0;
-  font-size: 1.125rem;
+  margin: 0 0 30px 0;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 .btn {
-  padding: 0.75rem 1.5rem;
+  padding: 12px 30px;
   border: none;
-  border-radius: 4px;
-  font-size: 1rem;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s;
   text-decoration: none;
   display: inline-block;
 }
 
 .btn-primary {
-  background-color: #2196f3;
+  background: rgb(0, 101, 105);
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #1976d2;
+  background: rgb(0, 80, 84);
+  box-shadow: 0 4px 12px rgba(0, 101, 105, 0.3);
+  transform: translateY(-2px);
 }
 </style>
