@@ -79,6 +79,7 @@ class User:
         return {
             'user_id': self.user_id,
             'username': self.username,
+            'password_hash': self.password_hash,
             'role': self.role.value,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
@@ -88,10 +89,12 @@ class User:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'User':
         """从字典创建"""
+        # 处理没有password_hash字段的情况
+        password_hash = data.get('password_hash', '')
         user = cls(
             data['user_id'],
             data['username'],
-            data['password_hash'],
+            password_hash,
             RoleType(data['role'])
         )
         user.created_at = datetime.fromisoformat(data['created_at'])
@@ -129,8 +132,14 @@ class Role:
 class PermissionService:
     """权限管理服务"""
     
-    def __init__(self, storage_path: str = 'backend/data/security'):
-        self.storage_path = storage_path
+    def __init__(self, storage_path: str = None):
+        if storage_path is None:
+            # 使用绝对路径，确保在任何目录下运行都能正确找到存储目录
+            import os
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            self.storage_path = os.path.join(base_dir, 'data', 'security')
+        else:
+            self.storage_path = storage_path
         self.users: Dict[str, User] = {}
         self.roles: Dict[RoleType, Role] = {}
         self._ensure_storage_dir()
@@ -141,7 +150,9 @@ class PermissionService:
     
     def _ensure_storage_dir(self):
         """确保存储目录存在"""
+        logger.info(f"确保存储目录存在: {self.storage_path}")
         os.makedirs(self.storage_path, exist_ok=True)
+        logger.info(f"存储目录已创建: {os.path.exists(self.storage_path)}")
     
     def _init_default_roles(self):
         """初始化默认角色"""
@@ -183,12 +194,26 @@ class PermissionService:
             admin_password = hashlib.sha256('admin123'.encode()).hexdigest()
             admin = User('admin', 'admin', admin_password, RoleType.ADMIN)
             self.users['admin'] = admin
+        else:
+            # 如果admin用户存在但password_hash为空，设置默认密码
+            admin = self.users['admin']
+            if not admin.password_hash:
+                admin_password = hashlib.sha256('admin123'.encode()).hexdigest()
+                admin.password_hash = admin_password
+                admin.updated_at = datetime.now()
         
         # 测试用户
         if 'test' not in self.users:
             test_password = hashlib.sha256('test123'.encode()).hexdigest()
             test_user = User('test', 'test', test_password, RoleType.USER)
             self.users['test'] = test_user
+        else:
+            # 如果test用户存在但password_hash为空，设置默认密码
+            test_user = self.users['test']
+            if not test_user.password_hash:
+                test_password = hashlib.sha256('test123'.encode()).hexdigest()
+                test_user.password_hash = test_password
+                test_user.updated_at = datetime.now()
         
         self._save_users()
     
