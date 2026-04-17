@@ -212,7 +212,11 @@ const editTimeline = (event) => {
 </script>
 
 <style scoped>
-.page { display: block; }
+.page { display: block; animation: fadeIn 0.6s ease forwards; opacity: 0; }
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
 
 .dashboard-grid {
   display: grid;
@@ -226,6 +230,28 @@ const editTimeline = (event) => {
   color: white;
   padding: 20px;
   border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,101,105,0.2);
+  cursor: pointer;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+  transform: rotate(45deg);
+  animation: pulse 4s infinite;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0,101,105,0.3);
 }
 
 .stat-card.warning {
@@ -244,11 +270,32 @@ const editTimeline = (event) => {
   font-size: 32px;
   font-weight: bold;
   margin: 10px 0;
+  transition: transform 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.stat-card:hover .stat-value {
+  transform: scale(1.05);
 }
 
 .stat-label {
   font-size: 14px;
   opacity: 0.9;
+  position: relative;
+  z-index: 1;
+}
+
+.stat-card div:last-child {
+  font-size: 12px;
+  opacity: 0.8;
+  position: relative;
+  z-index: 1;
+  transition: opacity 0.3s ease;
+}
+
+.stat-card:hover div:last-child {
+  opacity: 1;
 }
 
 .card {
@@ -257,6 +304,31 @@ const editTimeline = (event) => {
   padding: 20px;
   margin-bottom: 20px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, rgb(0, 101, 105) 0%, rgb(0, 130, 136) 100%);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+.card:hover::before {
+  transform: scaleX(1);
 }
 
 .card-title {
@@ -266,6 +338,7 @@ const editTimeline = (event) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: all 0.3s ease;
 }
 
 .task-list {
@@ -279,13 +352,32 @@ const editTimeline = (event) => {
   align-items: flex-start;
   gap: 12px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.task-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: rgb(0, 101, 105);
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
 }
 
 .task-item:hover {
   background: #f5f7fa;
   margin: 0 -12px;
   padding: 12px;
+  transform: translateX(5px);
+}
+
+.task-item:hover::before {
+  transform: scaleY(1);
 }
 
 .task-item:last-child {
@@ -297,6 +389,11 @@ const editTimeline = (event) => {
   height: 40px;
   border-radius: 2px;
   flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.task-item:hover .task-priority {
+  transform: scaleX(1.5);
 }
 
 .priority-high { background: #f5222d; }
@@ -305,16 +402,28 @@ const editTimeline = (event) => {
 
 .task-content {
   flex: 1;
+  transition: all 0.3s ease;
 }
 
 .task-title {
   font-size: 14px;
   margin-bottom: 4px;
+  transition: color 0.3s ease;
+}
+
+.task-item:hover .task-title {
+  color: rgb(0, 101, 105);
+  font-weight: 500;
 }
 
 .task-meta {
   font-size: 12px;
   color: #999;
+  transition: color 0.3s ease;
+}
+
+.task-item:hover .task-meta {
+  color: #666;
 }
 
 .task-tag {
@@ -323,6 +432,12 @@ const editTimeline = (event) => {
   font-size: 12px;
   background: #f5f7fa;
   color: #666;
+  transition: all 0.3s ease;
+}
+
+.task-item:hover .task-tag {
+  background: rgb(0, 101, 105);
+  color: white;
 }
 
 .service-grid {
@@ -337,22 +452,57 @@ const editTimeline = (event) => {
   border-radius: 8px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  border: 2px solid transparent;
+}
+
+.service-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(0,101,105,0.1), transparent);
+  transform: rotate(45deg);
+  transition: transform 0.6s ease;
 }
 
 .service-card:hover {
-  background: rgb(0, 101, 105);
+  background: linear-gradient(135deg, rgb(0, 101, 105) 0%, rgb(0, 130, 136) 100%);
   color: white;
-  transform: translateY(-2px);
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 8px 20px rgba(0,101,105,0.3);
+  border-color: rgba(255,255,255,0.3);
+}
+
+.service-card:hover::before {
+  transform: rotate(45deg) translateX(100%) translateY(100%);
 }
 
 .service-icon {
   font-size: 32px;
   margin-bottom: 8px;
+  transition: transform 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.service-card:hover .service-icon {
+  transform: scale(1.2) rotate(5deg);
 }
 
 .service-name {
   font-size: 13px;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.service-card:hover .service-name {
+  font-weight: 500;
 }
 
 .timeline {
@@ -363,6 +513,7 @@ const editTimeline = (event) => {
 .timeline-item {
   position: relative;
   padding-bottom: 20px;
+  transition: all 0.3s ease;
 }
 
 .timeline-item::before {
@@ -376,6 +527,7 @@ const editTimeline = (event) => {
   background: rgb(0, 101, 105);
   border: 2px solid white;
   box-shadow: 0 0 0 2px rgb(0, 101, 105);
+  transition: all 0.3s ease;
 }
 
 .timeline-item::after {
@@ -386,6 +538,16 @@ const editTimeline = (event) => {
   width: 2px;
   height: calc(100% - 20px);
   background: #e8e8e8;
+  transition: all 0.3s ease;
+}
+
+.timeline-item:hover::before {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 4px rgba(0,101,105,0.2);
+}
+
+.timeline-item:hover::after {
+  background: rgb(0, 101, 105);
 }
 
 .timeline-item:last-child::after {
@@ -396,42 +558,78 @@ const editTimeline = (event) => {
   font-size: 12px;
   color: #999;
   margin-bottom: 4px;
+  transition: color 0.3s ease;
+}
+
+.timeline-item:hover .timeline-time {
+  color: rgb(0, 101, 105);
+  font-weight: 500;
 }
 
 .timeline-content {
   font-size: 14px;
   color: #333;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all 0.3s;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.timeline-content::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(0,101,105,0.05) 0%, rgba(0,101,105,0) 100%);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
 }
 
 .timeline-content:hover {
-  background: rgba(0, 101, 105, 0.05);
+  background: rgba(0, 101, 105, 0.08);
+  transform: translateX(5px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.timeline-content:hover::before {
+  transform: translateX(0);
 }
 
 .timeline-content.editing {
   background: rgba(0, 101, 105, 0.1);
   outline: 2px solid rgb(0, 101, 105);
+  transform: translateX(0);
 }
 
 .badge {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 4px 12px;
+  border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .badge-danger {
   background: #fff1f0;
   color: #f5222d;
+  border: 1px solid #ffccc7;
 }
 
 .badge-warning {
   background: #fff7e6;
   color: #fa8c16;
+  border: 1px solid #ffd591;
+}
+
+.task-item:hover .badge {
+  transform: scale(1.05);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .btn {
@@ -440,24 +638,69 @@ const editTimeline = (event) => {
   border: none;
   cursor: pointer;
   font-size: 14px;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  font-weight: 500;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);
+  transform: rotate(45deg);
+  transition: transform 0.6s ease;
+}
+
+.btn:hover::before {
+  transform: rotate(45deg) translateX(100%) translateY(100%);
 }
 
 .btn-primary {
-  background: rgb(0, 101, 105);
+  background: linear-gradient(135deg, rgb(0, 101, 105) 0%, rgb(0, 130, 136) 100%);
   color: white;
+  box-shadow: 0 2px 8px rgba(0,101,105,0.2);
 }
 
 .btn-primary:hover {
-  background: rgb(0, 80, 84);
+  background: linear-gradient(135deg, rgb(0, 80, 84) 0%, rgb(0, 101, 105) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,101,105,0.3);
 }
 
 .btn-secondary {
   background: #f5f7fa;
   color: #333;
+  border: 1px solid #e8e8e8;
+  transition: all 0.3s ease;
 }
 
 .btn-secondary:hover {
   background: #e8e8e8;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(0, 101, 105);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(0, 80, 84);
 }
 </style>

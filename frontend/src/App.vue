@@ -63,7 +63,9 @@
       </header>
 
       <!-- 路由视图 -->
-      <router-view />
+      <transition name="router-transition" mode="out-in">
+        <router-view />
+      </transition>
     </main>
 
     <!-- AI 助手悬浮按钮 -->
@@ -163,8 +165,9 @@ html, body {
   top: 0;
   height: 100vh;
   overflow-y: auto;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 100;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .logo {
@@ -175,6 +178,11 @@ html, body {
   display: flex;
   align-items: center;
   gap: 10px;
+  transition: all 0.3s ease;
+}
+
+.logo:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .logo-icon {
@@ -185,6 +193,12 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.logo:hover .logo-icon {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 4px 12px rgba(83, 109, 254, 0.4);
 }
 
 .nav-menu {
@@ -197,15 +211,43 @@ html, body {
   display: flex;
   align-items: center;
   gap: 12px;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-left: 3px solid transparent;
   text-decoration: none;
   color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+
+.nav-item:hover::before, .nav-item.active::before {
+  transform: translateX(0);
 }
 
 .nav-item:hover, .nav-item.active {
   background: rgba(255,255,255,0.1);
-  border-left-color: rgb(0, 101, 105);
+  border-left-color: white;
+  transform: translateX(5px);
+}
+
+.nav-item span:first-child {
+  font-size: 18px;
+  transition: transform 0.3s ease;
+}
+
+.nav-item:hover span:first-child {
+  transform: scale(1.1) rotate(5deg);
 }
 
 /* 主内容区 */
@@ -215,6 +257,7 @@ html, body {
   padding: 20px;
   min-height: 100vh;
   overflow-y: auto;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .header {
@@ -226,6 +269,26 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, rgb(0, 101, 105) 0%, rgb(0, 130, 136) 100%);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
+}
+
+.header:hover::before {
+  transform: scaleX(1);
 }
 
 .search-box {
@@ -236,35 +299,89 @@ html, body {
 
 .search-box input {
   width: 100%;
-  padding: 10px 40px 10px 15px;
-  border: 1px solid #e8e8e8;
-  border-radius: 6px;
+  padding: 12px 45px 12px 18px;
+  border: 2px solid #e8e8e8;
+  border-radius: 25px;
   font-size: 14px;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #f9f9f9;
 }
 
 .search-box input:focus {
   outline: none;
   border-color: rgb(0, 101, 105);
-  box-shadow: 0 0 0 2px rgba(0,101,105,0.1);
+  box-shadow: 0 0 0 4px rgba(0,101,105,0.1);
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,101,105,0.15);
+}
+
+.search-box input::placeholder {
+  color: #999;
+  transition: color 0.3s ease;
+}
+
+.search-box input:focus::placeholder {
+  color: #ccc;
 }
 
 .user-info {
   display: flex;
   align-items: center;
   gap: 15px;
+  position: relative;
+}
+
+.user-info span {
+  font-size: 18px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.user-info span:hover {
+  background: rgba(0, 101, 105, 0.1);
+  transform: scale(1.1);
+  color: rgb(0, 101, 105);
 }
 
 .user-avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgb(0, 101, 105);
+  background: linear-gradient(135deg, rgb(0, 101, 105) 0%, rgb(0, 130, 136) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.user-avatar:hover {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 4px 16px rgba(0, 101, 105, 0.3);
+}
+
+.user-info span:last-child {
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 6px 12px;
+  border-radius: 16px;
+}
+
+.user-info span:last-child:hover {
+  background: rgba(0, 101, 105, 0.1);
+  color: rgb(0, 101, 105);
 }
 
 /* AI 助手按钮 */
@@ -291,5 +408,16 @@ html, body {
 .ai-fab:hover {
   transform: scale(1.1);
   box-shadow: 0 6px 20px rgba(0,101,105,0.6);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+  
+  .main-content {
+    margin-left: 0;
+  }
 }
 </style>

@@ -7,6 +7,8 @@ import re
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
 
+from backend.services.intent_model import get_intent_model, init_default_training_data
+
 logger = logging.getLogger(__name__)
 
 
@@ -15,117 +17,24 @@ class AIAssistantService:
     
     def __init__(self, skill_engine=None):
         self.skill_engine = skill_engine
-        self.intent_patterns = self._build_intent_patterns()
+        # 初始化意图模型
+        init_default_training_data()
+        self.intent_model = get_intent_model()
         
-    def _build_intent_patterns(self) -> Dict[str, List[re.Pattern]]:
-        """构建意图识别模式"""
-        logger.info("开始构建意图识别模式")
-        patterns = {
-            'document_convert': [
-                re.compile(r'转\s*(成 | 为 | 换|到)'),
-                re.compile(r'(把 | 将).*转换'),
-                re.compile(r'生成.*公文'),
-                re.compile(r'.*公文.*格式'),
-                re.compile(r'.*转成.*公文'),
-            ],
-            'sensitive_word_check': [
-                re.compile(r'检查.*敏感'),
-                re.compile(r'检测.*敏感'),
-                re.compile(r'查找.*违禁'),
-                re.compile(r'敏感词'),
-            ],
-            'data_merge': [
-                re.compile(r'合并.*(表格 | 文件 |excel| 数据)'),
-                re.compile(r'比对.*(表格 | 文件 | 数据)'),
-                re.compile(r'对比.*(表格 | 文件 | 数据)'),
-                re.compile(r'合并.*excel', re.IGNORECASE),
-                re.compile(r'合并.*表'),
-            ],
-            'report_generate': [
-                re.compile(r'生成.*报告'),
-                re.compile(r'生成.*总结'),
-                re.compile(r'写.*周报'),
-                re.compile(r'写.*月报'),
-                re.compile(r'生成周报'),
-                re.compile(r'生成月报'),
-            ],
-            # 权限管理相关意图
-            'permission_manage': [
-                re.compile(r'用户.*管理'),
-                re.compile(r'角色.*管理'),
-                re.compile(r'权限.*管理'),
-                re.compile(r'创建.*用户'),
-                re.compile(r'删除.*用户'),
-                re.compile(r'修改.*用户'),
-                re.compile(r'查看.*用户'),
-                re.compile(r'用户.*列表'),
-                re.compile(r'查看.*用户.*列表'),
-                re.compile(r'查看用户列表'),
-                re.compile(r'查看.*权限'),
-            ],
-            # 任务管理相关意图
-            'task_manage': [
-                re.compile(r'任务.*管理'),
-                re.compile(r'查看.*任务'),
-                re.compile(r'任务.*列表'),
-                re.compile(r'查看.*任务.*列表'),
-                re.compile(r'查看任务列表'),
-                re.compile(r'任务列表'),
-                re.compile(r'查看.*列表'),
-                re.compile(r'任务.*汇总'),
-                re.compile(r'工作总结'),
-                re.compile(r'工作.*报告'),
-                re.compile(r'完成.*任务'),
-                re.compile(r'更新.*任务'),
-            ],
-            # 配置管理相关意图
-            'config_manage': [
-                re.compile(r'配置.*管理'),
-                re.compile(r'获取.*配置'),
-                re.compile(r'保存.*配置'),
-                re.compile(r'删除.*配置'),
-                re.compile(r'导入.*配置'),
-                re.compile(r'导出.*配置'),
-                re.compile(r'用户.*偏好'),
-            ],
-            # 定时任务管理相关意图
-            'scheduler_manage': [
-                re.compile(r'定时.*任务'),
-                re.compile(r'调度.*任务'),
-                re.compile(r'创建.*定时'),
-                re.compile(r'修改.*定时'),
-                re.compile(r'删除.*定时'),
-                re.compile(r'查看.*定时'),
-            ],
-            # 文件检索相关意图
-            'file_retrieval': [
-                re.compile(r'查找.*文件'),
-                re.compile(r'检索.*文件'),
-                re.compile(r'搜索.*文件'),
-                re.compile(r'文件.*检索'),
-            ],
-            # 系统集成相关意图
-            'integration_manage': [
-                re.compile(r'系统.*集成'),
-                re.compile(r'集成.*管理'),
-                re.compile(r'WPS.*集成'),
-                re.compile(r'访问.*WPS'),
-            ],
-        }
-        logger.info(f"意图识别模式构建完成，包含 {len(patterns)} 种意图类型")
-        return patterns
+
     
-    def analyze_intent(self, message: str) -> Dict[str, Any]:
+    def analyze_intent(self, message: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         分析用户意图
         
         Args:
             message: 用户输入消息
+            context: 会话上下文信息
             
         Returns:
             意图分析结果
         """
-        logger.info(f"开始分析用户意图: {message}")
+        logger.info(f"开始分析用户意图: {message}, 上下文: {context}")
         result = {
             'intent': 'unknown',
             'confidence': 0.0,
@@ -135,18 +44,76 @@ class AIAssistantService:
             'suggestions': []
         }
         
-        # 匹配意图
-        for intent, patterns in self.intent_patterns.items():
-            logger.info(f"检查意图: {intent}")
-            for pattern in patterns:
-                logger.info(f"  检查模式: {pattern.pattern}")
-                if pattern.search(message):
-                    result['intent'] = intent
-                    result['confidence'] = 0.8
-                    logger.info(f"  匹配到意图: {intent}, 置信度: 0.8")
-                    break
-            if result['intent'] != 'unknown':
-                break
+        # 结合上下文信息增强意图识别
+        full_message = message
+        if context and 'previous_intent' in context:
+            logger.info(f"使用上下文信息增强意图识别，之前的意图: {context['previous_intent']}")
+            # 如果之前有意图，并且当前消息是对之前意图的补充，保持相同的意图
+            if context['previous_intent'] != 'unknown':
+                # 检查当前消息是否是对之前意图的补充
+                补充关键词 = ['是的', '对', '没错', '好的', '可以', '没问题', '继续', '下一步', '是的，', '对的', '好']
+                否定关键词 = ['不', '不是', '不对', '不行', '不要', '取消']
+                
+                is_confirmation = any(keyword in message for keyword in 补充关键词)
+                is_negative = any(keyword in message for keyword in 否定关键词)
+                
+                if is_confirmation:
+                    logger.info("当前消息是对之前意图的确认，保持相同的意图")
+                    result['intent'] = context['previous_intent']
+                    result['confidence'] = 0.9
+                    # 根据之前的意图映射到 Skill
+                    intent_to_skill = {
+                        'document_convert': 'doc_processor',
+                        'sensitive_word_check': 'sensitive_word_checker',
+                        'data_merge': 'data_merger',
+                        'report_generate': 'doc_processor',
+                        'permission_manage': 'system_skill',
+                        'task_manage': 'system_skill',
+                        'config_manage': 'system_skill',
+                        'scheduler_manage': 'scheduler_manager',
+                        'file_retrieval': 'system_skill',
+                        'integration_manage': 'system_skill'
+                    }
+                    if result['intent'] in intent_to_skill:
+                        result['skill_id'] = intent_to_skill[result['intent']]
+                        logger.info(f"意图映射到 Skill: {result['skill_id']}")
+                    logger.info(f"  匹配到意图: {result['intent']}, 置信度: 0.9")
+                elif not is_negative:
+                    # 如果不是否定，并且之前有意图，尝试使用之前的意图
+                    logger.info("当前消息可能是对之前意图的补充，尝试使用之前的意图")
+                    # 检查是否是追问消息
+                    追问关键词 = ['都分别是什么', '分别是什么', '具体是什么', '详细信息', '详细说明', '详细内容', '详细情况', '详细信息', '详细说明', '详细内容', '详细情况', '是什么', '有哪些', '包括什么', '包含什么', '有什么', '是什么', '有哪些', '包括什么', '包含什么', '有什么']
+                    is_question = any(keyword in message for keyword in 追问关键词)
+                    if is_question:
+                        logger.info("当前消息是对之前意图的追问，保持相同的意图")
+                        result['intent'] = context['previous_intent']
+                        result['confidence'] = 0.9
+                        # 根据之前的意图映射到 Skill
+                        intent_to_skill = {
+                            'document_convert': 'doc_processor',
+                            'sensitive_word_check': 'sensitive_word_checker',
+                            'data_merge': 'data_merger',
+                            'report_generate': 'doc_processor',
+                            'permission_manage': 'system_skill',
+                            'task_manage': 'system_skill',
+                            'config_manage': 'system_skill',
+                            'scheduler_manage': 'scheduler_manager',
+                            'file_retrieval': 'system_skill',
+                            'integration_manage': 'system_skill'
+                        }
+                        if result['intent'] in intent_to_skill:
+                            result['skill_id'] = intent_to_skill[result['intent']]
+                            logger.info(f"意图映射到 Skill: {result['skill_id']}")
+                        logger.info(f"  匹配到意图: {result['intent']}, 置信度: 0.9")
+                    # 这里可以根据实际情况进行更复杂的逻辑处理
+        
+        # 如果没有通过上下文确定意图，使用机器学习模型预测意图
+        if result['intent'] == 'unknown':
+            # 使用意图模型预测
+            intent, confidence = self.intent_model.predict(message)
+            result['intent'] = intent
+            result['confidence'] = confidence
+            logger.info(f"使用模型预测意图: {intent}, 置信度: {confidence}")
         
         # 根据意图映射到 Skill
         intent_to_skill = {
@@ -438,18 +405,36 @@ class AIAssistantService:
         logger.info(f"补充建议生成完成: {suggestions}")
         return suggestions
     
-    def process_message(self, message: str, user_id: str = None) -> Dict[str, Any]:
+    def process_message(self, message: str, user_id: str = None, session_id: int = None) -> Dict[str, Any]:
         """
         处理用户消息
         
         Args:
             message: 用户输入消息
             user_id: 用户 ID
+            session_id: 会话 ID
             
         Returns:
             处理结果
         """
-        logger.info(f"开始处理用户消息：{message}, 用户：{user_id}")
+        logger.info(f"开始处理用户消息：{message}, 用户：{user_id}, 会话：{session_id}")
+        
+        # 加载会话上下文
+        context = {}
+        if session_id:
+            logger.info(f"加载会话上下文：session_id={session_id}")
+            from backend.models import get_db
+            from backend.models.db_models import ChatSession
+            db = get_db()
+            session = db.query(ChatSession).filter_by(id=session_id).first()
+            if session:
+                context = session.context or {}
+                logger.info(f"会话上下文加载完成：{context}")
+                logger.info(f"会话上下文中的previous_intent：{context.get('previous_intent', '不存在')}")
+            else:
+                logger.warning(f"会话不存在：session_id={session_id}")
+        else:
+            logger.info("没有提供会话ID，使用空上下文")
         
         # 从配置中心加载用户偏好配置
         from backend.services.config_service import config_service
@@ -457,9 +442,9 @@ class AIAssistantService:
         user_preference = config_service.get_config('user_preference', 'default', user_id)
         logger.info(f"用户偏好配置加载完成：{user_preference}")
         
-        # 分析意图
+        # 分析意图，使用上下文信息增强识别
         logger.info("开始分析用户意图")
-        intent_result = self.analyze_intent(message)
+        intent_result = self.analyze_intent(message, context)
         logger.info(f"意图分析完成：{intent_result}")
         
         # 如果有缺失参数，返回询问
@@ -527,6 +512,209 @@ class AIAssistantService:
                             'message': f"您没有权限执行此操作，请联系管理员"
                         }
                         return response
+                # 检查是否是确认消息或追问消息
+                补充关键词 = ['是的', '对', '没错', '好的', '可以', '没问题', '继续', '下一步', '是的，', '对的', '好']
+                追问关键词 = ['都分别是什么', '分别是什么', '具体是什么', '详细信息', '详细说明', '详细内容', '详细情况', '详细信息', '详细说明', '详细内容', '详细情况', '是什么', '有哪些', '包括什么', '包含什么', '有什么', '是什么', '有哪些', '包括什么', '包含什么', '有什么']
+                is_confirmation = any(keyword in message for keyword in 补充关键词)
+                is_question = any(keyword in message for keyword in 追问关键词)
+                
+                if (is_confirmation or is_question) and context and 'previous_intent' in context and context['previous_intent'] != 'unknown':
+                    # 处理确认消息或追问消息
+                    logger.info(f"处理确认消息或追问消息，之前的意图：{context['previous_intent']}")
+                    previous_intent = context['previous_intent']
+                    
+                    # 根据之前的意图生成响应
+                    if previous_intent == 'permission_manage':
+                        if is_question:
+                            # 追问消息，返回用户和角色的详细信息
+                            users = permission_service.list_users()
+                            roles = permission_service.list_roles()
+                            message = "系统用户和角色详细信息：\n\n"
+                            message += "用户列表：\n"
+                            for user in users:
+                                message += f"- 用户名：{user['username']}，角色：{user['role']}\n"
+                            message += "\n角色列表：\n"
+                            for role in roles:
+                                message += f"- 角色：{role['role_type']}，权限：{', '.join(role['permissions'][:5])}{'...' if len(role['permissions']) > 5 else ''}\n"
+                            response = {
+                                'success': True,
+                                'need_more_info': False,
+                                'intent': previous_intent,
+                                'message': message
+                            }
+                        else:
+                            # 确认消息
+                            response = {
+                                'success': True,
+                                'need_more_info': False,
+                                'intent': previous_intent,
+                                'message': "好的，我已经完成了权限管理操作。"
+                            }
+                    elif previous_intent == 'task_manage':
+                        if is_question:
+                            # 追问消息，返回任务的详细信息
+                            import requests
+                            url = "http://localhost:5000/api/tasks"
+                            try:
+                                response_data = requests.get(url).json()
+                                if response_data.get('success'):
+                                    tasks = response_data['data']
+                                    message = "系统任务详细信息：\n\n"
+                                    for task in tasks:
+                                        message += f"- 任务名称：{task['title']}\n"
+                                        message += f"  状态：{task['status']}\n"
+                                        message += f"  优先级：{task['priority']}\n"
+                                        message += f"  描述：{task['description']}\n"
+                                        message += f"  截止日期：{task['due_date']}\n\n"
+                                    response = {
+                                        'success': True,
+                                        'need_more_info': False,
+                                        'intent': previous_intent,
+                                        'message': message
+                                    }
+                                else:
+                                    response = {
+                                        'success': False,
+                                        'need_more_info': False,
+                                        'message': '获取任务详细信息失败'
+                                    }
+                            except Exception as e:
+                                logger.error(f"调用任务API失败：{str(e)}")
+                                response = {
+                                    'success': False,
+                                    'need_more_info': False,
+                                    'message': '获取任务详细信息失败，请检查系统连接'
+                                }
+                        else:
+                            # 确认消息
+                            response = {
+                                'success': True,
+                                'need_more_info': False,
+                                'intent': previous_intent,
+                                'message': "好的，我已经完成了任务管理操作。"
+                            }
+                    elif previous_intent == 'config_manage':
+                        if is_question:
+                            # 追问消息，返回配置的详细信息
+                            configs = config_service.get_all_configs(user_id)
+                            message = "系统配置详细信息：\n\n"
+                            message += f"{configs}"
+                            response = {
+                                'success': True,
+                                'need_more_info': False,
+                                'intent': previous_intent,
+                                'message': message
+                            }
+                        else:
+                            # 确认消息
+                            response = {
+                                'success': True,
+                                'need_more_info': False,
+                                'intent': previous_intent,
+                                'message': "好的，我已经完成了配置管理操作。"
+                            }
+                    elif previous_intent == 'file_retrieval':
+                        if is_question:
+                            # 追问消息，返回文件的详细信息
+                            response = {
+                                'success': True,
+                                'need_more_info': False,
+                                'intent': previous_intent,
+                                'message': "文件详细信息：\n（文件检索功能待实现）"
+                            }
+                        else:
+                            # 确认消息
+                            response = {
+                                'success': True,
+                                'need_more_info': False,
+                                'intent': previous_intent,
+                                'message': "好的，我已经完成了文件检索操作。"
+                            }
+                    elif previous_intent == 'integration_manage':
+                        if is_question:
+                            # 追问消息，返回集成的详细信息
+                            response = {
+                                'success': True,
+                                'need_more_info': False,
+                                'intent': previous_intent,
+                                'message': "集成详细信息：\n（集成管理功能待实现）"
+                            }
+                        else:
+                            # 确认消息
+                            response = {
+                                'success': True,
+                                'need_more_info': False,
+                                'intent': previous_intent,
+                                'message': "好的，我已经完成了集成管理操作。"
+                            }
+                    else:
+                        if is_question:
+                            # 追问消息，返回通用的详细信息
+                            response = {
+                                'success': True,
+                                'need_more_info': False,
+                                'intent': previous_intent,
+                                'message': "详细信息：\n（功能待实现）"
+                            }
+                        else:
+                            # 确认消息
+                            response = {
+                                'success': True,
+                                'need_more_info': False,
+                                'intent': previous_intent,
+                                'message': "好的，我已经完成了操作。"
+                            }
+                    
+                    # 保存会话上下文
+                    if session_id:
+                        logger.info(f"保存会话上下文：session_id={session_id}")
+                        from backend.models import get_db
+                        from backend.models.db_models import ChatSession
+                        db = get_db()
+                        session = db.query(ChatSession).filter_by(id=session_id).first()
+                        if session:
+                            # 更新上下文信息
+                            new_context = {
+                                'previous_intent': previous_intent,
+                                'previous_params': intent_result['params'],
+                                'last_message': message,
+                                'last_response': response.get('message', ''),
+                                'timestamp': datetime.utcnow().isoformat()
+                            }
+                            # 合并之前的上下文信息
+                            if session.context:
+                                new_context.update(session.context)
+                            # 限制上下文大小，只保留最近的几次交互
+                            if 'interaction_history' in new_context:
+                                interaction_history = new_context['interaction_history']
+                                interaction_history.append({
+                                    'message': message,
+                                    'response': response.get('message', ''),
+                                    'intent': previous_intent,
+                                    'timestamp': datetime.utcnow().isoformat()
+                                })
+                                # 只保留最近的10次交互
+                                if len(interaction_history) > 10:
+                                    interaction_history = interaction_history[-10:]
+                                new_context['interaction_history'] = interaction_history
+                            else:
+                                new_context['interaction_history'] = [{
+                                    'message': message,
+                                    'response': response.get('message', ''),
+                                    'intent': previous_intent,
+                                    'timestamp': datetime.utcnow().isoformat()
+                                }]
+                            
+                            session.context = new_context
+                            try:
+                                db.commit()
+                                logger.info("会话上下文保存成功")
+                            except Exception as e:
+                                logger.error(f"会话上下文保存失败：{str(e)}")
+                                db.rollback()
+                    
+                    logger.info(f"确认消息或追问消息处理完成：{response}")
+                    return response
                 # 权限管理功能
                 if intent_result['intent'] == 'permission_manage':
                     params = intent_result['params']
@@ -662,6 +850,60 @@ class AIAssistantService:
                                 'roles': roles
                             }
                         }
+                        
+                        # 生成上下文信息
+                        new_context = {
+                            'previous_intent': intent_result['intent'],
+                            'previous_params': intent_result['params'],
+                            'last_message': message,
+                            'last_response': response.get('message', ''),
+                            'timestamp': datetime.utcnow().isoformat()
+                        }
+                        # 合并之前的上下文信息
+                        if context:
+                            new_context.update(context)
+                        # 限制上下文大小，只保留最近的几次交互
+                        if 'interaction_history' in new_context:
+                            interaction_history = new_context['interaction_history']
+                            interaction_history.append({
+                                'message': message,
+                                'response': response.get('message', ''),
+                                'intent': intent_result['intent'],
+                                'timestamp': datetime.utcnow().isoformat()
+                            })
+                            # 只保留最近的10次交互
+                            if len(interaction_history) > 10:
+                                interaction_history = interaction_history[-10:]
+                            new_context['interaction_history'] = interaction_history
+                        else:
+                            new_context['interaction_history'] = [{
+                                'message': message,
+                                'response': response.get('message', ''),
+                                'intent': intent_result['intent'],
+                                'timestamp': datetime.utcnow().isoformat()
+                            }]
+                        
+                        # 保存会话上下文
+                        if session_id:
+                            logger.info(f"保存会话上下文：session_id={session_id}")
+                            from backend.models import get_db
+                            from backend.models.db_models import ChatSession
+                            db = get_db()
+                            session = db.query(ChatSession).filter_by(id=session_id).first()
+                            if session:
+                                session.context = new_context
+                                try:
+                                    db.commit()
+                                    logger.info("会话上下文保存成功")
+                                except Exception as e:
+                                    logger.error(f"会话上下文保存失败：{str(e)}")
+                                    db.rollback()
+                        
+                        # 将上下文信息添加到响应中
+                        response['context'] = new_context
+                        
+                        logger.info(f"系统功能处理完成：{response}")
+                        return response
                 
                 # 任务管理功能
                 elif intent_result['intent'] == 'task_manage':
@@ -895,6 +1137,54 @@ class AIAssistantService:
                         'message': f"执行 {intent_result['intent']} 操作成功"
                     }
                 
+                # 保存会话上下文
+                if session_id:
+                    logger.info(f"保存会话上下文：session_id={session_id}")
+                    from backend.models import get_db
+                    from backend.models.db_models import ChatSession
+                    db = get_db()
+                    session = db.query(ChatSession).filter_by(id=session_id).first()
+                    if session:
+                        # 更新上下文信息
+                        new_context = {
+                            'previous_intent': intent_result['intent'],
+                            'previous_params': intent_result['params'],
+                            'last_message': message,
+                            'last_response': response.get('message', ''),
+                            'timestamp': datetime.utcnow().isoformat()
+                        }
+                        # 合并之前的上下文信息
+                        if session.context:
+                            new_context.update(session.context)
+                        # 限制上下文大小，只保留最近的几次交互
+                        if 'interaction_history' in new_context:
+                            interaction_history = new_context['interaction_history']
+                            interaction_history.append({
+                                'message': message,
+                                'response': response.get('message', ''),
+                                'intent': intent_result['intent'],
+                                'timestamp': datetime.utcnow().isoformat()
+                            })
+                            # 只保留最近的10次交互
+                            if len(interaction_history) > 10:
+                                interaction_history = interaction_history[-10:]
+                            new_context['interaction_history'] = interaction_history
+                        else:
+                            new_context['interaction_history'] = [{
+                                'message': message,
+                                'response': response.get('message', ''),
+                                'intent': intent_result['intent'],
+                                'timestamp': datetime.utcnow().isoformat()
+                            }]
+                        
+                        session.context = new_context
+                        try:
+                            db.commit()
+                            logger.info("会话上下文保存成功")
+                        except Exception as e:
+                            logger.error(f"会话上下文保存失败：{str(e)}")
+                            db.rollback()
+                
                 logger.info(f"系统功能处理完成：{response}")
                 return response
                 
@@ -906,6 +1196,63 @@ class AIAssistantService:
                     'message': f"系统功能处理失败：{str(e)}"
                 }
                 return response
+        
+        # 保存会话上下文
+        if session_id:
+            logger.info(f"保存会话上下文：session_id={session_id}")
+            from backend.models import get_db
+            from backend.models.db_models import ChatSession
+            db = get_db()
+            session = db.query(ChatSession).filter_by(id=session_id).first()
+            if session:
+                # 获取响应消息
+                response_message = ''
+                if 'response' in locals() and response:
+                    response_message = response.get('message', '')
+                
+                # 更新上下文信息
+                new_context = {
+                    'previous_intent': intent_result['intent'],
+                    'previous_params': intent_result['params'],
+                    'last_message': message,
+                    'last_response': response_message,
+                    'timestamp': datetime.utcnow().isoformat()
+                }
+                # 合并之前的上下文信息
+                if session.context:
+                    new_context.update(session.context)
+                # 限制上下文大小，只保留最近的几次交互
+                if 'interaction_history' in new_context:
+                    interaction_history = new_context['interaction_history']
+                    interaction_history.append({
+                        'message': message,
+                        'response': response_message,
+                        'intent': intent_result['intent'],
+                        'timestamp': datetime.utcnow().isoformat()
+                    })
+                    # 只保留最近的10次交互
+                    if len(interaction_history) > 10:
+                        interaction_history = interaction_history[-10:]
+                    new_context['interaction_history'] = interaction_history
+                else:
+                    new_context['interaction_history'] = [{
+                        'message': message,
+                        'response': response_message,
+                        'intent': intent_result['intent'],
+                        'timestamp': datetime.utcnow().isoformat()
+                    }]
+                
+                session.context = new_context
+                try:
+                    db.commit()
+                    logger.info("会话上下文保存成功")
+                except Exception as e:
+                    logger.error(f"会话上下文保存失败：{str(e)}")
+                    db.rollback()
+        
+        # 将上下文信息添加到响应中
+        if 'response' in locals() and response:
+            response['context'] = new_context
         # 尝试使用 LLM 服务生成真实响应
         # 注意：系统功能优先处理，不使用 LLM 服务
         if intent_result['skill_id'] != 'system_skill':

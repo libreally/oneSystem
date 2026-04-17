@@ -1,11 +1,20 @@
 """
 基础 API 路由
 """
+import logging
 from flask import Blueprint, jsonify, request
 from datetime import datetime
 from backend.services.skill_engine import skill_engine
 from backend.services.ai_service import init_ai_service
 from backend.services.user_profile_service import user_profile_service
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+logger = logging.getLogger(__name__)
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -24,15 +33,11 @@ def health_check():
 def chat():
     """AI 聊天接口"""
     from flask import request, jsonify
-    import logging
     import traceback
     from backend.services.ai_service import ai_assistant_service
     from backend.models.db_models import ChatSession
     from backend.models import get_db
     from datetime import datetime
-    
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
     
     try:
         data = request.get_json()
@@ -66,7 +71,7 @@ def chat():
         
         try:
             # 使用 AI 服务处理消息
-            result = ai_assistant_service.process_message(message, user_id)
+            result = ai_assistant_service.process_message(message, user_id, session_id)
             ai_response = result.get('message', result.get('response', ai_response))
             
             # 记录用户使用行为
@@ -130,17 +135,25 @@ def chat():
                 # 显式地重新赋值messages字段
                 session.messages = new_messages
                 
+                # 保存上下文信息
+                if 'context' in result:
+                    session.context = result['context']
+                    logger.info(f"保存上下文信息：{session.context}")
+                
                 try:
                     db.commit()
                     logger.info("消息保存成功")
                     # 重新查询会话，确认消息是否被保存
                     updated_session = db.query(ChatSession).filter_by(id=session_id).first()
                     logger.info(f"更新后会话的消息数量：{len(updated_session.messages)}")
+                    if hasattr(updated_session, 'context'):
+                        logger.info(f"更新后会话的上下文：{updated_session.context}")
                 except Exception as e:
                     logger.error(f"消息保存失败：{str(e)}")
                     db.rollback()
         else:
             # 如果没有会话ID，创建一个新会话
+            context = result.get('context', {})
             new_session = ChatSession(
                 user_id=user_id,
                 title='新对话',
@@ -156,8 +169,9 @@ def chat():
                         'timestamp': datetime.utcnow().isoformat()
                     }
                 ],
-                context={}
+                context=context
             )
+            logger.info(f"创建新会话时保存上下文信息：{context}")
             db.add(new_session)
             try:
                 db.commit()
@@ -481,6 +495,44 @@ def clear_chat_session(session_id):
         'success': True,
         'message': '会话已清空'
     })
+
+
+@api_bp.route('/feedback', methods=['POST'])
+def feedback():
+    """处理用户反馈，用于AI模型学习"""
+    try:
+        # 解析请求数据
+        data = request.get_json()
+        message = data.get('message', '').strip()
+        correct_intent = data.get('correct_intent', '').strip()
+        user_id = data.get('user_id', 'default_user')
+        
+        logger.info(f"收到用户反馈：message={message}, correct_intent={correct_intent}, user_id={user_id}")
+        
+        if not message or not correct_intent:
+            logger.warning("消息内容或正确意图为空")
+            return jsonify({
+                'success': False,
+                'message': '请提供消息内容和正确意图'
+            })
+        
+        # 从意图模型中学习
+        from backend.services.intent_model import get_intent_model
+        intent_model = get_intent_model()
+        intent_model.learn_from_feedback(message, correct_intent)
+        
+        logger.info(f"从用户反馈中学习完成：message='{message}', correct_intent='{correct_intent}'")
+        return jsonify({
+            'success': True,
+            'message': '反馈已收到，AI模型已更新'
+        })
+        
+    except Exception as e:
+        logger.error(f"处理用户反馈失败: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'处理反馈时遇到错误：{str(e)}'
+        })
 
 
 @api_bp.route('/user/profile', methods=['GET'])

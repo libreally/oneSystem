@@ -1,0 +1,7 @@
+{
+  "permission_manage": 0,
+  "file_retrieval": 1,
+  "integration_manage": 2,
+  "config_manage": 3,
+  "task_manage": 4
+}

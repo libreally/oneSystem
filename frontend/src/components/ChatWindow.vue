@@ -267,6 +267,16 @@ watch(() => chatStore.messages.length, () => {
   flex-direction: column;
   z-index: 1000;
   overflow: hidden;
+  transform: translateY(100px);
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes slideUp {
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .chat-container {
@@ -283,10 +293,10 @@ watch(() => chatStore.messages.length, () => {
   width: 280px;
   height: 100%;
   background: white;
-  box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+  box-shadow: 2px 0 12px rgba(0,0,0,0.15);
   z-index: 1001;
   transform: translateX(-100%);
-  transition: transform 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-right: 1px solid #e8e8e8;
   display: flex;
   flex-direction: column;
@@ -306,6 +316,7 @@ watch(() => chatStore.messages.length, () => {
 
 .chat-container.contact-panel-active .ai-chat-body {
   margin-left: 280px;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ai-chat-header {
@@ -317,11 +328,26 @@ watch(() => chatStore.messages.length, () => {
   align-items: center;
   z-index: 1002;
   position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.ai-chat-header button {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.ai-chat-header button:hover {
+  background: rgba(255,255,255,0.1);
+  transform: scale(1.05);
 }
 
 .contact-panel-header {
   background: #f5f7fa;
   border-bottom: 1px solid #e8e8e8;
+  padding: 15px;
+  font-weight: 600;
 }
 
 .contact-list {
@@ -335,13 +361,32 @@ watch(() => chatStore.messages.length, () => {
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.contact-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: rgb(0, 101, 105);
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
 }
 
 .contact-item:hover {
   background: #f5f7fa;
   margin: 0 -15px;
   padding: 15px;
+  transform: translateX(5px);
+}
+
+.contact-item:hover::before {
+  transform: scaleY(1);
 }
 
 .contact-avatar {
@@ -356,6 +401,14 @@ watch(() => chatStore.messages.length, () => {
   font-weight: bold;
   font-size: 16px;
   flex-shrink: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.contact-item:hover .contact-avatar {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 4px 12px rgba(0,101,105,0.3);
 }
 
 .contact-info {
@@ -367,6 +420,11 @@ watch(() => chatStore.messages.length, () => {
   font-size: 14px;
   font-weight: 600;
   margin-bottom: 4px;
+  transition: color 0.3s ease;
+}
+
+.contact-item:hover .contact-name {
+  color: rgb(0, 101, 105);
 }
 
 .contact-status {
@@ -374,6 +432,7 @@ watch(() => chatStore.messages.length, () => {
   padding: 2px 8px;
   border-radius: 10px;
   display: inline-block;
+  transition: all 0.3s ease;
 }
 
 .contact-status.online {
@@ -396,6 +455,7 @@ watch(() => chatStore.messages.length, () => {
   overflow-y: auto;
   padding: 20px;
   background: #f5f7fa;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .message {
@@ -403,10 +463,25 @@ watch(() => chatStore.messages.length, () => {
   display: flex;
   gap: 10px;
   position: relative;
+  animation: messageSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  opacity: 0;
+  transform: translateY(10px);
 }
 
 .message.user {
   flex-direction: row-reverse;
+  animation-delay: 0.1s;
+}
+
+.message.ai {
+  animation-delay: 0.2s;
+}
+
+@keyframes messageSlideIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .message-avatar {
@@ -418,6 +493,7 @@ watch(() => chatStore.messages.length, () => {
   justify-content: center;
   flex-shrink: 0;
   border: 1px solid rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
 }
 
 .ai-avatar {
@@ -426,7 +502,7 @@ watch(() => chatStore.messages.length, () => {
 }
 
 .user-avatar-chat {
-  background: #52c41a;
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
   color: white;
 }
 
@@ -442,10 +518,12 @@ watch(() => chatStore.messages.length, () => {
   font-size: 14px;
   line-height: 1.5;
   position: relative;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
 .message.user .message-content {
-  background: rgb(0, 101, 105);
+  background: linear-gradient(135deg, rgb(0, 101, 105) 0%, rgb(0, 130, 136) 100%);
   color: white;
   border-top-right-radius: 4px;
   border-bottom-right-radius: 18px;
@@ -456,7 +534,11 @@ watch(() => chatStore.messages.length, () => {
   color: #333;
   border-top-left-radius: 4px;
   border-bottom-left-radius: 18px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.message-content:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
 /* Markdown 样式 */
@@ -538,10 +620,12 @@ watch(() => chatStore.messages.length, () => {
 .message-content a {
   color: rgb(0, 101, 105);
   text-decoration: none;
+  transition: all 0.3s ease;
 }
 
 .message-content a:hover {
   text-decoration: underline;
+  color: rgb(0, 130, 136);
 }
 
 .message-footer {
@@ -552,6 +636,12 @@ watch(() => chatStore.messages.length, () => {
   margin-top: 4px;
   line-height: 1;
   font-size: 11px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.message:hover .message-footer {
+  opacity: 1;
 }
 
 .message.user .message-footer {
@@ -571,6 +661,7 @@ watch(() => chatStore.messages.length, () => {
 .message-status {
   font-size: 10px;
   color: rgba(0,101,105,0.8);
+  transition: color 0.3s ease;
 }
 
 .message-status.sending {
@@ -587,16 +678,19 @@ watch(() => chatStore.messages.length, () => {
 
 .loading-indicator {
   display: flex;
-  gap: 4px;
-  padding: 8px 0;
+  gap: 6px;
+  padding: 12px 0;
+  align-items: center;
+  justify-content: center;
 }
 
 .loading-dot {
-  width: 8px;
-  height: 8px;
-  background: rgb(0, 101, 105);
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(135deg, rgb(0, 101, 105) 0%, rgb(0, 130, 136) 100%);
   border-radius: 50%;
   animation: loading 1.4s infinite ease-in-out both;
+  box-shadow: 0 2px 4px rgba(0,101,105,0.3);
 }
 
 .loading-dot:nth-child(1) {
@@ -610,9 +704,11 @@ watch(() => chatStore.messages.length, () => {
 @keyframes loading {
   0%, 80%, 100% {
     transform: scale(0);
+    opacity: 0.5;
   }
   40% {
     transform: scale(1);
+    opacity: 1;
   }
 }
 
@@ -623,37 +719,81 @@ watch(() => chatStore.messages.length, () => {
   gap: 10px;
   position: relative;
   z-index: 999;
+  background: white;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
 }
 
 .ai-chat-input input {
   flex: 1;
-  padding: 10px 15px;
-  border: 1px solid #e8e8e8;
-  border-radius: 20px;
+  padding: 12px 18px;
+  border: 2px solid #e8e8e8;
+  border-radius: 25px;
   outline: none;
   font-size: 14px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #f9f9f9;
 }
 
 .ai-chat-input input:focus {
   border-color: rgb(0, 101, 105);
+  box-shadow: 0 0 0 4px rgba(0,101,105,0.1);
+  background: white;
+  transform: translateY(-1px);
+}
+
+.ai-chat-input input::placeholder {
+  color: #999;
+  transition: color 0.3s ease;
+}
+
+.ai-chat-input input:focus::placeholder {
+  color: #ccc;
 }
 
 .send-btn {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: rgb(0, 101, 105);
+  background: linear-gradient(135deg, rgb(0, 101, 105) 0%, rgb(0, 130, 136) 100%);
   color: white;
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,101,105,0.3);
 }
 
 .send-btn:hover {
-  background: rgb(0, 80, 84);
-  transform: scale(1.05);
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 4px 12px rgba(0,101,105,0.5);
+}
+
+.send-btn:active {
+  transform: scale(0.95);
+}
+
+.send-btn::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);
+  transform: rotate(45deg);
+  animation: pulse 3s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: rotate(45deg) translateX(-100%) translateY(-100%);
+  }
+  100% {
+    transform: rotate(45deg) translateX(100%) translateY(100%);
+  }
 }
 </style>
